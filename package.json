@@ -1,0 +1,36 @@
+{
+  "name": "mongoose-authorize",
+  "version": "0.0.0",
+  "description": "Authorization (NOT authentication) plugin for mongoose",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paperhub/mongoose-authorize.git"
+  },
+  "keywords": [
+    "mongoose",
+    "security",
+    "authorize",
+    "authorization",
+    "permission",
+    "role",
+    "rbac"
+  ],
+  "author": "André Gaul <andre@gaul.io>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/paperhub/mongoose-authorize/issues"
+  },
+  "homepage": "https://github.com/paperhub/mongoose-authorize",
+  "devDependencies": {
+    "mocha": "^2.0.1",
+    "should": "^4.3.0"
+  },
+  "dependencies": {
+    "mongoose": "^3.8.19",
+    "underscore": "^1.7.0"
+  }
+}
