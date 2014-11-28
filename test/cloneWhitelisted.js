@@ -35,4 +35,21 @@ describe('cloneWhitelisted()', function () {
       clone.should.eql(el.obj);
     });
   });
+
+  it('should process nested arrays and objects', function () {
+    var clone = cloneWhitelisted(obj, {
+      field1: true,
+      nested: {
+        field1: true
+      },
+      array2: [{fuzz: true}]
+    });
+    clone.should.eql({
+      field1: 1,
+      nested: {
+        field1: 2
+      },
+      array2: [{fuzz: 'bear'}, {}]
+    });
+  });
 });

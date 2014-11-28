@@ -6,5 +6,5 @@ module.exports = {
     field2: 'bar'
   },
   array1: [1, 2, 3],
-  array2: [{foo: 'bar'}, {foo: 'baz'}]
+  array2: [{foo: 'bar', fuzz: 'bear'}, {foo: 'baz'}]
 };
