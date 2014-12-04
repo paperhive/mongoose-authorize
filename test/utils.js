@@ -1,22 +1,37 @@
 var dbURI = 'mongodb://localhost/mongoose-authorize-test';
 var mongoose = require('mongoose');
 var async = require('async');
-var _clearDB = require('mocha-mongoose')(dbURI, {noClear: true});
+var _ = require('underscore');
 
 var clearDB = function (done) {
   async.series([
     // ensure a database connection is established
     function (cb) {
       if (mongoose.connection.db) return cb();
-      mongoose.connect(dbURI, function(err) {
-        if (err) return cb(err);
-        // drop the full database (including indexes) after connecting
-        // (not handled by clearDB)
-        mongoose.connection.db.dropDatabase(cb);
-      });
+      mongoose.connect(dbURI, cb);
     },
     // drop collections
-    _clearDB
+    function (cb) {
+      mongoose.connection.db.collections(function (err, collections) {
+        if (err) return cb(err);
+        async.parallel(
+          _.flatten(_.map(collections, function (collection) {
+            if (collection.collectionName.match(/^system\./)) return [];
+            return [
+              // remove all documents in collection
+              function (cb) {
+                collection.remove({}, {safe: true}, cb);
+              },
+              // drop indexes in collection
+              function (cb) {
+                collection.dropIndexes(cb);
+              }
+            ];
+          })),
+          cb
+        );
+      });
+    }
   ],
   done);
 };

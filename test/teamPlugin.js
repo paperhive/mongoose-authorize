@@ -1,6 +1,7 @@
 var mongoose = require('mongoose');
 var should = require('should');
 var async = require('async');
+var _ = require('underscore');
 
 var authorize = require('../');
 var utils = require('./utils');
@@ -21,6 +22,12 @@ describe('authorize', function () {
     var teamSchema = new mongoose.Schema({name: String});
     teamSchema.plugin(authorize.teamPlugin);
     models.Team = mongoose.model('Team', teamSchema);
+  });
+
+  beforeEach(function () {
+    _.each(models, function (model) {
+      model.ensureIndexes();
+    });
   });
 
   describe('teamPlugin', function () {
