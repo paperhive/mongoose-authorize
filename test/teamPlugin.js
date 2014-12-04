@@ -96,6 +96,6 @@ describe('authorize', function () {
           }
         );
       });
-    }); // #authorizeGetActors
+    }); // #getUserIds
   }); // actorPlugin
 });

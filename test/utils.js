@@ -1,4 +1,4 @@
-var dbURI = 'mongodb://localhost/paperhub-test';
+var dbURI = 'mongodb://localhost/mongoose-authorize-test';
 var mongoose = require('mongoose');
 var async = require('async');
 var _clearDB = require('mocha-mongoose')(dbURI, {noClear: true});
