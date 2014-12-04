@@ -1,3 +1,1 @@
-module.exports = {
-  cloneWhitelisted: require('./lib/cloneWhitelisted')
-};
+module.exports = require('./lib');
