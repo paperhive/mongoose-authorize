@@ -47,5 +47,19 @@ describe('teamPlugin', function () {
         });
       });
     });
+    it('should detect team cycles', function(done) {
+      utils.insertDocs(function (err, user1, user2, team1, team2) {
+        if (err) return done(err);
+        team1.members.teams.push(team2);
+        team1.save(function (err, team1) {
+          if (err) return done(err);
+          team1.getUserIds(function (err, userIds) {
+            if (err) return done(err);
+            [user1._id, user2._id].should.eql(userIds);
+            done();
+          });
+        });
+      });
+    });
   }); // #getUserIds
 }); // teamPlugin
