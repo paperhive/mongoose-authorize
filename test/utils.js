@@ -65,7 +65,7 @@ var insertDocs = function (done) {
       function (cb) {
         models.User.create({name: 'nschloe'}, {name: 'andrenarchy'}, cb);
       },
-      // create team1
+      // create team1 with member user1
       function (user1, user2, cb) {
         models.Team.create(
           {name: 'team nschloe', members: {users: [user1._id] }},
@@ -75,7 +75,7 @@ var insertDocs = function (done) {
           }
         );
       },
-      // create team2
+      // create team2 with members user2 and team1 -> user1 and user2
       function (user1, user2, team1, cb) {
         models.Team.create(
           {
@@ -97,7 +97,9 @@ var insertDocs = function (done) {
           {
             name: 'c-base',
             permissions: [
+              // team2: user1 and user2 (via team1)
               {team: team2, action: 'read', target: 'orgaInfo'},
+              // team1: user1
               {team: team1, action: 'write', target: 'orgaInfo'}
             ]
           },
