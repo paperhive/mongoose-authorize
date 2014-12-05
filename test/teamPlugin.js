@@ -38,49 +38,14 @@ describe('teamPlugin', function () {
     });
 
     it('should return array of user ids for nested teams', function (done) {
-      async.waterfall(
-        [
-          // create user1 and user2
-          function (cb) {
-            utils.models.User.create({name: 'nschloe'}, {name: 'andrenarchy'}, cb);
-          },
-          // create team1
-          function (user1, user2, cb) {
-            utils.models.Team.create(
-              {name: 'team nschloe', members: {users: [user1._id] }},
-              function (err, team1) {
-                if (err) return cb(err);
-                return cb(null, user1, user2, team1);
-              }
-            );
-          },
-          // create team2
-          function (user1, user2, team1, cb) {
-            utils.models.Team.create(
-              {
-                name: 'team andrenarchy + friends',
-                members: {
-                  users: [user2._id],
-                  teams: [team1._id]
-                }
-              },
-              function (err, team2) {
-                if (err) return cb(err);
-                return cb(null, user1, user2, team1, team2);
-              }
-            );
-          }
-        ],
-        // test
-        function (err, user1, user2, team1, team2) {
+      utils.insertDocs(function (err, user1, user2, team1, team2) {
+        if (err) return done(err);
+        team2.getUserIds(function (err, userIds) {
           if (err) return done(err);
-          team2.getUserIds(function (err, userIds) {
-            if (err) return done(err);
-            [user2._id, user1._id].should.eql(userIds);
-            done();
-          });
-        }
-      );
+          [user2._id, user1._id].should.eql(userIds);
+          done();
+        });
+      });
     });
   }); // #getUserIds
 }); // teamPlugin
