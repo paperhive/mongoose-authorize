@@ -52,11 +52,11 @@ async.waterfall([
       }
     );
   },
-  // create a team 'editors' with members user_halligalli and all members of team_admins
+  // create a team 'readers' with members user_halligalli and all members of team_admins
   function (user_halligalli, team_admins, cb) {
     mongoose.model('Team').create(
       {
-        name: 'editors',
+        name: 'readers',
         members: {
           users: [user_halligalli],
           teams: [team_admins]
@@ -65,15 +65,20 @@ async.waterfall([
       cb
     );
   }],
-  function (err, team_editors) {
+  function (err, team_readers) {
     if (err) return console.error(err);
-    // team_editors.getUserIds(...), see below
+    // use team_readers, e.g., team_readers.getUserIds(...), see below
   }
 );
 ```
-Because teams may have users *and* teams as members, the team plugin offers `getUserIds` to get a flat array of all members' userIds:
+#### teamPlugin.getUserIds(callback)
+Because teams may have users *and* teams as members, the team plugin offers `getUserIds` to get a flat array of all members' userIds.
+
+ * `callback(err, userIds)` where userIds is an array of all members' userIds (includes members of nested teams).
+
+##### Example
 ```javascript
-team_editors.getUserIds(function (err, userIds) {
+team_readers.getUserIds(function (err, userIds) {
   if (err) return console.error(err);
   // userIds now contains: [user_halligalli._id, user_hondanz._id]
 });
@@ -81,3 +86,50 @@ team_editors.getUserIds(function (err, userIds) {
 
 ## permissionsPlugin
  * grant and check permissions for actions on ressources to teams
+
+Assume you store articles and you want to grant permissions on this article. Let's use the `permissionsPlugin` for this:
+```javascript
+var articleSchema = new mongoose.Schema({title: String, body: String});
+articleSchema.plugin(authorize.permissionsPlugin);
+mongoose.model('Article', articleSchema);
+```
+Now we can create an article and assign permissions for the teams created above by filling the property `permissions`:
+```javascript
+mongoose.model('Article').create(
+  {
+    title: 'most interesting article ever',
+    body: 'lorem ipsum',
+    permissions: [
+      {team: team_readers, action: 'read', target: 'body'},
+      {team: team_admins, action: 'write', target: 'body'}
+    ]
+  },
+  function (err, article) {
+    if (err) return console.error(err);
+    // use article, e.g., article.getPermissions() or
+    // article.hasPermissions(userId, action, target), see below
+  }
+);
+```
+
+#### permissionsPlugin.getPermissions(callback)
+
+Returns an array of all permissions with flattened userIds.
+
+ * `callback(err, permissions)` where permissions is an array of permissions, each having the properties
+    * `userIds`: the provided team is resolved to userIds via [teamPlugin.getUserIds](#teamplugingetuseridscallback)
+    * `action`: the string as provided in the permission
+    * `target`: the string as provided in the permission
+
+##### Example
+```javascript
+article.getPermissions(function (err, permissions) {
+  if (err) return console.error(err);
+  /* permissions contains:
+    [
+      {userIds: [user_halligalli._id, user_hondanz._id], action: 'read', target: 'body'},
+      {userIds: [user_hondanz._id], action: 'write', target: 'body'},
+    ]
+  */
+});
+```
