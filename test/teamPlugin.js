@@ -31,12 +31,12 @@ describe('teamPlugin', function () {
               },
               function (err, team_admins) {
                 if (err) return cb(err);
-                cb(null, user_halligalli, team_admins);
+                cb(null, user_hondanz, user_halligalli, team_admins);
               }
             );
           },
           // create a team 'editors' with members user_halligalli and all members of team_admins
-          function (user_halligalli, team_admins, cb) {
+          function (user_hondanz, user_halligalli, team_admins, cb) {
             mongoose.model('Team').create(
               {
                 name: 'editors',
@@ -45,10 +45,20 @@ describe('teamPlugin', function () {
                   teams: [team_admins]
                 }
               },
-              cb
+              function (err, team_editors) {
+                if (err) return cb(err);
+                cb(null, user_hondanz, user_halligalli, team_editors);
+              }
             );
           }],
-          done
+          function (err, user_hondanz, user_halligalli, team_editors) {
+            should(err).equal(null);
+            team_editors.getUserIds(function (err, userIds) {
+              should(err).equal(null);
+              userIds.should.eql([user_halligalli._id, user_hondanz._id]);
+              done();
+            });
+          }
         );
       }
     );
