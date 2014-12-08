@@ -65,11 +65,18 @@ async.waterfall([
       cb
     );
   }],
-  function (err) {
+  function (err, team_editors) {
     if (err) return console.error(err);
-    console.log('users and teams created');
+    // team_editors.getUserIds(...), see below
   }
 );
+```
+Because teams may have users *and* teams as members, the team plugin offers `getUserIds` to get a flat array of all members' userIds:
+```javascript
+team_editors.getUserIds(function (err, userIds) {
+  if (err) return console.error(err);
+  // userIds now contains: [user_halligalli._id, user_hondanz._id]
+});
 ```
 
 ## permissionsPlugin
