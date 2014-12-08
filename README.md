@@ -133,3 +133,22 @@ article.getPermissions(function (err, permissions) {
   */
 });
 ```
+
+#### permissionsPlugin.hasPermissions(userId, action, target, callback)
+
+ * `userId`: a userId string
+ * `action`: a string
+ * `target`: a string
+ * `callback(err, granted)`: `granted` is true if and only if the provided user has the permission to perform the specified action on the specified target.
+
+##### Example
+```javascript
+article.hasPermissions(user_halligalli._id, 'write', 'body', function (err, granted) {
+  if (err) return console.error(err);
+  // granted is false
+});
+article.hasPermissions(user_hondanz._id, 'read', 'body', function (err, granted) {
+  if (err) return console.error(err);
+  // granted is true
+});
+```
