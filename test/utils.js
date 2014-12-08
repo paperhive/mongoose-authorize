@@ -1,7 +1,7 @@
 var dbURI = 'mongodb://localhost/mongoose-authorize-test';
 var mongoose = require('mongoose');
 var async = require('async');
-var _ = require('underscore');
+var _ = require('lodash');
 
 var authorize = require('../');
 

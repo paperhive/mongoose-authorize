@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 var should = require('should');
 var async = require('async');
-var _ = require('underscore');
+var _ = require('lodash');
 
 var authorize = require('../');
 var utils = require('./utils');
