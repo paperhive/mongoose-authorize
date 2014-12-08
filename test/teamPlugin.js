@@ -11,6 +11,47 @@ beforeEach(utils.clearDB);
 
 describe('teamPlugin', function () {
   describe('#getUserIds', function () {
+    it(
+      'should allow insertion of users and teams as described in the docs',
+      function (done) {
+        async.waterfall([
+          // create a user
+          function (cb) {
+            mongoose.model('User').create({name: 'hondanz'}, {name: 'halligalli'}, cb);
+          },
+          // create a team 'admins' with member user_hondanz
+          function(user_hondanz, user_halligalli, cb) {
+            mongoose.model('Team').create(
+              {
+                name: 'admins',
+                members: {
+                  users: [user_hondanz],
+                  teams: []
+                }
+              },
+              function (err, team_admins) {
+                if (err) return cb(err);
+                cb(null, user_halligalli, team_admins);
+              }
+            );
+          },
+          // create a team 'editors' with members user_halligalli and all members of team_admins
+          function (user_halligalli, team_admins, cb) {
+            mongoose.model('Team').create(
+              {
+                name: 'editors',
+                members: {
+                  users: [user_halligalli],
+                  teams: [team_admins]
+                }
+              },
+              cb
+            );
+          }],
+          done
+        );
+      }
+    );
 
     it('should return an empty array without members', function (done) {
       var team = new utils.models.Team({name: 'andrenarchy\'s friends'});
