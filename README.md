@@ -100,14 +100,14 @@ mongoose.model('Article').create(
     title: 'most interesting article ever',
     body: 'lorem ipsum',
     permissions: [
-      {team: team_readers, action: 'read', target: 'body'},
-      {team: team_admins, action: 'write', target: 'body'}
+      {team: team_readers, action: 'read', ressource: 'body'},
+      {team: team_admins, action: 'write', ressource: 'body'}
     ]
   },
   function (err, article) {
     if (err) return console.error(err);
     // use article, e.g., article.getPermissions() or
-    // article.hasPermissions(userId, action, target), see below
+    // article.hasPermissions(userId, action, ressource), see below
   }
 );
 ```
@@ -119,7 +119,7 @@ Returns an array of all permissions with flattened userIds.
  * `callback(err, permissions)` where permissions is an array of permissions, each having the properties
     * `userIds`: the provided team is resolved to userIds via [teamPlugin.getUserIds](#teamplugingetuseridscallback)
     * `action`: the string as provided in the permission
-    * `target`: the string as provided in the permission
+    * `ressource`: the string as provided in the permission
 
 ##### Example
 ```javascript
@@ -127,19 +127,19 @@ article.getPermissions(function (err, permissions) {
   if (err) return console.error(err);
   /* permissions contains:
     [
-      {userIds: [user_halligalli._id, user_hondanz._id], action: 'read', target: 'body'},
-      {userIds: [user_hondanz._id], action: 'write', target: 'body'},
+      {userIds: [user_halligalli._id, user_hondanz._id], action: 'read', ressource: 'body'},
+      {userIds: [user_hondanz._id], action: 'write', ressource: 'body'},
     ]
   */
 });
 ```
 
-#### permissionsPlugin.hasPermissions(userId, action, target, callback)
+#### permissionsPlugin.hasPermissions(userId, action, ressource, callback)
 
  * `userId`: a userId string
  * `action`: a string
- * `target`: a string
- * `callback(err, granted)`: `granted` is true if and only if the provided user has the permission to perform the specified action on the specified target.
+ * `ressource`: a string
+ * `callback(err, granted)`: `granted` is true if and only if the provided user has the permission to perform the specified action on the specified ressource.
 
 ##### Example
 ```javascript

@@ -98,9 +98,9 @@ var insertDocs = function (done) {
             name: 'c-base',
             permissions: [
               // team2: user1 and user2 (via team1)
-              {team: team2, action: 'read', target: 'orgaInfo'},
+              {team: team2, action: 'read', ressource: 'orgaInfo'},
               // team1: user1
-              {team: team1, action: 'write', target: 'orgaInfo'}
+              {team: team1, action: 'write', ressource: 'orgaInfo'}
             ]
           },
           function (err, orga1) {
