@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/paperhub/mongoose-authorize",
   "devDependencies": {
+    "bcrypt": "^0.8.0",
     "mocha": "^2.0.1",
     "should": "^4.3.0"
   },

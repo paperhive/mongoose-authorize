@@ -21,6 +21,14 @@ var organizationSchema = new mongoose.Schema({name: String});
 organizationSchema.plugin(authorize.permissionsPlugin);
 models.Organization = mongoose.model('Organization', organizationSchema);
 
+// define article
+var articleSchema = new mongoose.Schema({
+  author: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+  body: {type: String, authRessource: 'content'},
+  private: Boolean
+});
+models.User = mongoose.model('User', userSchema);
+
 var clearDB = function (done) {
   async.series(_.flatten([
     // ensure a database connection is established
