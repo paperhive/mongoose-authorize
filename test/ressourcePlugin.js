@@ -23,19 +23,38 @@ describe('ressourcePlugin', function () {
            *
            * TODO: process virtual fields
            */
+          schema.methods.authorizedToJSON = function (userId, done) {
+            var doc = this;
+            return async.waterfall([
+              function (cb) {
+                // get ressources the user has permissions to read
+                return doc.getRessources(userId, 'read', cb);
+              },
+              function (ressources, cb) {
+                return docToJSON(userId, doc, ['info'], cb);
+              }
+            ], done);
+          };
 
-          function docToJSON (doc, readRessources) {
-            // TODO: get ressources from permissions for given user
-            readRessources = readRessources || ['info', 'settings', 'contactVisible'];
+          function docToJSON (userId, doc, readRessources, done) {
 
-            // recursively process document until a subdocument is reached
-            function processObj (obj, path) {
+            processObj(doc.toJSON(), undefined, function (err, json) {
+              if (err) return done(err);
+              if (!json || _.isEmpty(json)) return done();
+
+              // insert _id
+              json._id = doc._id.toString();
+              return done(null, json);
+            });
+
+            // recursively process objects until a subdocument is reached
+            function processObj (obj, path, cbObj) {
 
               // helper function for processing leaf elements
-              function processLeaf(obj, objdoc, options, schema) {
+              function processLeaf(obj, objdoc, options, schema, cbLeaf) {
                 // is sub/embedded document (authorization is checked there)
                 if (schema) {
-                  return docToJSON(objdoc, readRessources);
+                  return docToJSON(userId, objdoc, readRessources, cbLeaf);
                 }
 
                 // check access to ressource
@@ -44,44 +63,49 @@ describe('ressourcePlugin', function () {
                   ressource = ressource(doc);
                 }
                 if (!ressource || !_.contains(readRessources, ressource)) {
-                  return;
+                  return cbLeaf();
                 }
 
                 // referenced document
                 if (options.ref) {
                   // populated?
                   if (_.isObject(obj)) {
-                    return objdoc.authorizedToJSON();
+                    return objdoc.authorizedToJSON(userId, cbLeaf);
                   }
                   // unpopulated (id only)
-                  return obj;
+                  return cbLeaf(null, obj);
                 }
 
                 // primitive JSON type
                 if (_.isNull(obj) || _.isString(obj) ||
                     _.isNumber(obj) || _.isBoolean(obj)) {
-                  return obj;
+                  return cbLeaf(null, obj);
                 }
 
-                console.log('unhandled!'); // should never be reached!
-                return;
+                // should never be reached!
+                return cbLeaf(new Error('unhandled type!'));
               }
 
               // root object or nested object
               if (!path || doc.schema.nested[path]) {
-                // process keys
-                var ret = {};
-                _.each(_.keys(obj), function (key) {
-                  var curPath = path ? path + '.' + key : key;
-
-                  var data = processObj(obj[key], curPath);
-
-                  // add data if we have data
-                  if (data !== undefined) {
-                    ret[key] = data;
+                return async.parallel(
+                  // process keys
+                  _.mapValues(obj, function (value, key) {
+                    return function (cb) {
+                      var curPath = path ? path + '.' + key : key;
+                      return processObj(value, curPath, cb);
+                    };
+                  }),
+                  // remove keys with undefined values
+                  function (err, result) {
+                    if (err) return cbObj(err);
+                    result = _.pick(result, function (value) {
+                      return value !== undefined;
+                    });
+                    // return undefined instead of empty object
+                    return cbObj(null, _.isEmpty(result) ? undefined : result);
                   }
-                });
-                return _.isEmpty(ret) ? undefined : ret;
+                );
               }
 
               // 'leaf' path (in this document)
@@ -91,39 +115,35 @@ describe('ressourcePlugin', function () {
                 // is array
                 if (_.isArray(pathConfig.options.type)) {
                   // iterate over JSON and corresponding mongoose objects
-                  var array = _.compact(_.map(
+                  return async.parallel(_.map(
                     _.zip(obj, doc.get(path)),
                     function (value) {
-                      return processLeaf(
-                        value[0], value[1],
-                        pathConfig.options.type[0], pathConfig.schema
-                      );
+                      return function (cb) {
+                        processLeaf(
+                          value[0], value[1],
+                          pathConfig.options.type[0], pathConfig.schema,
+                          cb
+                        );
+                      };
                     }
-                  ));
-                  return array.length ? array : undefined;
+                  ), function (err, results) {
+                    if (err) return cbObj(err);
+                    results = _.compact(results);
+                    cbObj(null, results.length ? results : undefined);
+                  });
                 }
 
                 return processLeaf(obj, doc.get(path),
-                                   pathConfig.options, pathConfig.schema
+                                   pathConfig.options, pathConfig.schema,
+                                   cbObj
                                   );
               }
 
-              console.log('unhandled!'); // should never be reached!
-              return;
+              // should never be reached!
+              return cbObj(new Error('unhandled type'));
             }
-
-            var ret = processObj(doc.toJSON()); //{depopulate: true}
-            if (_.isEmpty(ret)) return;
-
-            // insert _id
-            ret._id = doc._id.toString();
-            return ret;
           }
 
-
-          schema.methods.authorizedToJSON = function () {
-            return docToJSON(this);
-          };
         }
 
         var getEmailRessource = function (doc) {
@@ -197,6 +217,15 @@ describe('ressourcePlugin', function () {
           },
           function (andre, schloemi, cb) {
             andre.knows = schloemi;
+            /*
+            andre.permissions = [
+              {
+                team: { members: { users: [andre] } },
+                action: 'read',
+                ressource: 'info'
+              }
+            ];*/
+
             andre.save(cb);
           },
           function (andre, _, cb) {
@@ -206,15 +235,22 @@ describe('ressourcePlugin', function () {
             });
           },
           function (andre, cb) {
-            andre.populate('knows', cb);
+            andre.populate('knows', function (err) {
+              if (err) return cb(err);
+              cb (null, andre);
+            });
           },
           function (andre, cb) {
-            console.log(andre.authorizedToJSON());
-            /*
-            console.log(andre);
-            console.log(andre.schema);
-            */
-            cb();
+            andre.authorizedToJSON(andre._id, function (err, json) {
+              console.log(json);
+              cb(null, andre);
+            });
+          },
+          function (andre, cb) {
+            andre.authorizedToJSON('wurst', function (err, json) {
+              console.log(json);
+              cb();
+            });
           }
         ], done);
       });
