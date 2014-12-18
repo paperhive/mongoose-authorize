@@ -31,55 +31,44 @@ describe('ressourcePlugin', function () {
             // recursively process document until a subdocument is reached
             function processObj (obj, path) {
 
-              // check if path is valid
-              if (path && !doc.schema.paths[path] && !doc.schema.nested[path]) {
-                return;
-              }
+              // helper function for processing leaf elements
+              function processLeaf(obj, objdoc, options, schema) {
+                // is sub/embedded document (authorization is checked there)
+                if (schema) {
+                  return docToJSON(objdoc, readRessources);
+                }
 
-              // obj is an array
-              if (_.isArray(obj)) {
-                var array = _.compact(_.map(doc.get(path), function (value) {
-                  // subdocument / embedded document
-                  if (doc.schema.paths[path].schema) {
-                    return docToJSON(value, readRessources);
-                  }
-                  // is this a populated referenced document?
-                  var type = doc.schema.paths[path].options.type;
-                  if (_.isArray(type) && type.length && type[0].ref) {
-                    if (!_.isFunction(value.authorizedToJSON)) {
-                      return;
-                    }
-                    return value.authorizedToJSON();
-                  }
-                  // something else
-                  return processObj(value, path);
-                }));
-                return array.length ? array : undefined;
-              // obj is null, string, number, boolean
-              } else if (_.isNull(obj) || _.isString(obj) ||
-                         _.isNumber(obj) || _.isBoolean(obj)) {
-                var ressource = doc.schema.paths[path].options.ressource;
+                // check access to ressource
+                var ressource = options.ressource;
                 if (_.isFunction(ressource)) {
                   ressource = ressource(doc);
                 }
                 if (!ressource || !_.contains(readRessources, ressource)) {
                   return;
                 }
-                return obj;
-              }
-              // obj is an object
-              else if (_.isObject(obj) && !_.isFunction(obj)) {
 
-                // is this a populated referenced document?
-                if (doc.schema.paths[path] &&
-                    doc.schema.paths[path].options.ref) {
-                  var popdoc = doc.get(path);
-                  if (!_.isFunction(popdoc.authorizedToJSON)) {
-                    return;
+                // referenced document
+                if (options.ref) {
+                  // populated?
+                  if (_.isObject(obj)) {
+                    return objdoc.authorizedToJSON();
                   }
-                  return popdoc.authorizedToJSON();
+                  // unpopulated (id only)
+                  return obj;
                 }
 
+                // primitive JSON type
+                if (_.isNull(obj) || _.isString(obj) ||
+                    _.isNumber(obj) || _.isBoolean(obj)) {
+                  return obj;
+                }
+
+                console.log('unhandled!'); // should never be reached!
+                return;
+              }
+
+              // root object or nested object
+              if (!path || doc.schema.nested[path]) {
                 // process keys
                 var ret = {};
                 _.each(_.keys(obj), function (key) {
@@ -92,11 +81,34 @@ describe('ressourcePlugin', function () {
                     ret[key] = data;
                   }
                 });
-
                 return _.isEmpty(ret) ? undefined : ret;
               }
-              // fail!
-              console.log('error: unhandled case!');
+
+              // 'leaf' path (in this document)
+              if (doc.schema.paths[path]) {
+                var pathConfig = doc.schema.paths[path];
+
+                // is array
+                if (_.isArray(pathConfig.options.type)) {
+                  // iterate over JSON and corresponding mongoose objects
+                  var array = _.compact(_.map(
+                    _.zip(obj, doc.get(path)),
+                    function (value) {
+                      return processLeaf(
+                        value[0], value[1],
+                        pathConfig.options.type[0], pathConfig.schema
+                      );
+                    }
+                  ));
+                  return array.length ? array : undefined;
+                }
+
+                return processLeaf(obj, doc.get(path),
+                                   pathConfig.options, pathConfig.schema
+                                  );
+              }
+
+              console.log('unhandled!'); // should never be reached!
               return;
             }
 
@@ -138,7 +150,7 @@ describe('ressourcePlugin', function () {
               animation: {type: Boolean, ressource: 'settings'}
             }
           },
-          knows: [{type: mongoose.Schema.Types.ObjectId, ref: 'User1', ressource: 'info'}]
+          knows: {type: mongoose.Schema.Types.ObjectId, ref: 'User1', ressource: 'info'}
         });
         userSchema.plugin(ressourcePlugin, {ressource: 'info'});
         userSchema.plugin(authorize.permissionsPlugin);
@@ -178,14 +190,13 @@ describe('ressourcePlugin', function () {
                 {address: 'andre@gaul.io', type: 'private', visible: true}
               ],
               settings: {rememberMe: true},
-              knows: user1
             }, {
               name: 'Schlömi',
               settings: {rememberMe: false}
             }, cb);
           },
           function (andre, schloemi, cb) {
-            andre.knows = [schloemi];
+            andre.knows = schloemi;
             andre.save(cb);
           },
           function (andre, _, cb) {
@@ -199,7 +210,10 @@ describe('ressourcePlugin', function () {
           },
           function (andre, cb) {
             console.log(andre.authorizedToJSON());
+            /*
             console.log(andre);
+            console.log(andre.schema);
+            */
             cb();
           }
         ], done);
