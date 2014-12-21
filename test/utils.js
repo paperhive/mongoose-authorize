@@ -3,31 +3,7 @@ var mongoose = require('mongoose');
 var async = require('async');
 var _ = require('lodash');
 
-var authorize = require('../');
-
-var models = {};
-
-// define User
-var userSchema = new mongoose.Schema({name: String});
-models.User = mongoose.model('User', userSchema);
-
-// define Team
-var teamSchema = new mongoose.Schema({name: String});
-teamSchema.plugin(authorize.teamPlugin);
-models.Team = mongoose.model('Team', teamSchema);
-
-// define Organization
-var organizationSchema = new mongoose.Schema({name: String});
-organizationSchema.plugin(authorize.permissionsPlugin);
-models.Organization = mongoose.model('Organization', organizationSchema);
-
-// define article
-var articleSchema = new mongoose.Schema({
-  author: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
-  body: {type: String, authRessource: 'content'},
-  private: Boolean
-});
-models.User = mongoose.model('User', userSchema);
+var authorize = require('../')();
 
 var clearDB = function (done) {
   async.series(_.flatten([
@@ -58,12 +34,45 @@ var clearDB = function (done) {
         );
       });
     },
-    // ensureIndexes
-    _.map(models, function (model) {
-      return model.ensureIndexes.bind(model);
-    })
+    function (cb) {
+      // reset mongoose models
+      mongoose.connection.models = {};
+      mongoose.models = {};
+      mongoose.modelSchemas = {};
+      cb();
+    },
+    //// ensureIndexes
+    //_.map(models, function (model) {
+    //  return model.ensureIndexes.bind(model);
+    //})
   ]),
   done);
+};
+
+var defineModels = function (done) {
+  // define User
+  var userSchema = new mongoose.Schema({name: String});
+  mongoose.model('User', userSchema);
+
+  // define Team
+  var teamSchema = new mongoose.Schema({name: String});
+  teamSchema.plugin(authorize.teamPlugin);
+  mongoose.model('Team', teamSchema);
+
+  // define Organization
+  var organizationSchema = new mongoose.Schema({name: String});
+  organizationSchema.plugin(authorize.permissionsPlugin);
+  mongoose.model('Organization', organizationSchema);
+
+  // define Article
+  var articleSchema = new mongoose.Schema({
+    author: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+    body: {type: String, authRessource: 'content'},
+    private: Boolean
+  });
+  mongoose.model('Article', userSchema);
+
+  done();
 };
 
 var insertDocs = function (done) {
@@ -71,11 +80,11 @@ var insertDocs = function (done) {
     [
       // create user1 and user2
       function (cb) {
-        models.User.create({name: 'nschloe'}, {name: 'andrenarchy'}, cb);
+        mongoose.model('User').create({name: 'nschloe'}, {name: 'andrenarchy'}, cb);
       },
       // create team1 with member user1
       function (user1, user2, cb) {
-        models.Team.create(
+        mongoose.model('Team').create(
           {name: 'team nschloe', members: {users: [user1._id] }},
           function (err, team1) {
             if (err) return cb(err);
@@ -85,7 +94,7 @@ var insertDocs = function (done) {
       },
       // create team2 with members user2 and team1 -> user1 and user2
       function (user1, user2, team1, cb) {
-        models.Team.create(
+        mongoose.model('Team').create(
           {
             name: 'team andrenarchy + friends',
             members: {
@@ -101,7 +110,7 @@ var insertDocs = function (done) {
       },
       // create orga1 with permissions
       function (user1, user2, team1, team2, cb) {
-        models.Organization.create(
+        mongoose.model('Organization').create(
           {
             name: 'c-base',
             permissions: [
@@ -124,7 +133,8 @@ var insertDocs = function (done) {
 
 
 module.exports = {
+  authorize: authorize,
   clearDB: clearDB,
-  insertDocs: insertDocs,
-  models: models
+  defineModels: defineModels,
+  insertDocs: insertDocs
 };
