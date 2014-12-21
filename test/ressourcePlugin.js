@@ -7,10 +7,10 @@ var bcrypt = require('bcrypt');
 var utils = require('./utils');
 var authorize = utils.authorize;
 
-// clear database before each run
-beforeEach(utils.clearDB);
-
 describe('ressourcePlugin', function () {
+
+  // clear database before each run
+  beforeEach(utils.clearDB);
 
   // define models
   beforeEach(function (done) {
@@ -30,11 +30,11 @@ describe('ressourcePlugin', function () {
       settings: {
         rememberMe: {type: Boolean, ressource: 'settings'},
       },
-      father: {type: mongoose.Schema.Types.ObjectId, ref: 'UserComplex', ressource: 'info'},
-      friends: [{type: mongoose.Schema.Types.ObjectId, ref: 'UserComplex', ressource: 'info'}]
+      father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', ressource: 'info'},
+      friends: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', ressource: 'info'}]
     });
     userSchema.plugin(authorize.ressourcePlugin);
-    userSchema.plugin(authorize.permissionsPlugin, {userModel: 'UserComplex'});
+    userSchema.plugin(authorize.permissionsPlugin, {userModel: 'User'});
 
     userSchema.methods.setPassword = function (userId, password, done) {
       var user = this;
@@ -59,11 +59,16 @@ describe('ressourcePlugin', function () {
         }
       ], done);
     };
-    mongoose.model('UserComplex', userSchema);
+    mongoose.model('User', userSchema);
+
+    // define Team
+    var teamSchema = new mongoose.Schema({name: String});
+    teamSchema.plugin(authorize.teamPlugin);
+    mongoose.model('Team', teamSchema);
 
     async.waterfall([
       function createUsers (cb) {
-        mongoose.model('UserComplex').create(
+        mongoose.model('User').create(
           {
             name: 'Luke',
             emails: [
@@ -83,7 +88,7 @@ describe('ressourcePlugin', function () {
     it('should only return fields the user is allowed to read', function (done) {
       async.waterfall([
         function (cb) {
-          mongoose.model('UserComplex').create({
+          mongoose.model('User').create({
             name: 'André',
             passwordHash: '0eaf4f4c',
             emails: [
@@ -96,15 +101,24 @@ describe('ressourcePlugin', function () {
           }, cb);
         },
         function (andre, schloemi, cb) {
+          mongoose.model('Team').create({
+            name: 'andre',
+            members: {
+              users: [andre]
+            }
+          }, function (err, team_andre) {
+            cb(null, andre, schloemi, team_andre);
+          });
+        },
+        function (andre, schloemi, team_andre, cb) {
           andre.knows = schloemi;
-          /*
           andre.permissions = [
             {
-              team: { members: { users: [andre] } },
+              team: team_andre,
               action: 'read',
               ressource: 'info'
             }
-          ];*/
+          ];
 
           andre.save(cb);
         },

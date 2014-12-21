@@ -5,11 +5,10 @@ var _ = require('lodash');
 
 var utils = require('./utils');
 
-// clear database before each run
-beforeEach(utils.clearDB);
-beforeEach(utils.defineModels);
-
 describe('teamPlugin', function () {
+  beforeEach(utils.clearDB);
+  beforeEach(utils.defineModels);
+
   describe('#getUserIds', function () {
     it(
       'should allow insertion of users and teams as described in the docs',

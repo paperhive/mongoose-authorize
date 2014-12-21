@@ -5,11 +5,11 @@ var _ = require('lodash');
 
 var utils = require('./utils');
 
-// clear database before each run
-beforeEach(utils.clearDB);
-beforeEach(utils.defineModels);
-
 describe('permissionPlugin', function () {
+
+  beforeEach(utils.clearDB);
+  beforeEach(utils.defineModels);
+
   describe('#getPermissions', function () {
     it('should return permissions with arrays of userIds', function (done) {
       utils.insertDocs(function (err, user1, user2, team1, team2, orga1) {
