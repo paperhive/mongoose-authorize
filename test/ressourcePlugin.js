@@ -33,7 +33,19 @@ describe('ressourcePlugin', function () {
       father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', ressource: 'info'},
       friends: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', ressource: 'info'}]
     });
-    userSchema.plugin(authorize.ressourcePlugin);
+    userSchema.plugin(
+      authorize.ressourcePlugin,
+      {
+        getRessources: function (doc, action, data, done) {
+          // user has full access to info and settings
+          if (data.userId === doc._id) return done(null, ['info', 'settings']);
+          // everyone has read access to info
+          if (action === 'read') return done(null, ['info']);
+          // everything else is denied
+          done(null, []);
+        },
+      }
+    );
     userSchema.plugin(authorize.permissionsPlugin, {userModel: 'User'});
 
     userSchema.methods.setPassword = function (userId, password, done) {
