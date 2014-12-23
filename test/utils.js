@@ -64,14 +64,6 @@ var defineModels = function (done) {
   organizationSchema.plugin(authorize.permissionsPlugin);
   mongoose.model('Organization', organizationSchema);
 
-  // define Article
-  var articleSchema = new mongoose.Schema({
-    author: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
-    body: {type: String, authRessource: 'content'},
-    private: Boolean
-  });
-  mongoose.model('Article', userSchema);
-
   done();
 };
 
@@ -115,9 +107,9 @@ var insertDocs = function (done) {
             name: 'c-base',
             permissions: [
               // team2: user1 and user2 (via team1)
-              {team: team2, action: 'read', ressource: 'orgaInfo'},
+              {team: team2, action: 'read', component: 'orgaInfo'},
               // team1: user1
-              {team: team1, action: 'write', ressource: 'orgaInfo'}
+              {team: team1, action: 'write', component: 'orgaInfo'}
             ]
           },
           function (err, orga1) {

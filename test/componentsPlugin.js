@@ -7,36 +7,36 @@ var bcrypt = require('bcrypt');
 var utils = require('./utils');
 var authorize = utils.authorize;
 
-describe('ressourcePlugin', function () {
+describe('componentsPlugin', function () {
 
   // clear database before each run
   beforeEach(utils.clearDB);
 
   // define models
   beforeEach(function (done) {
-    var getEmailRessource = function (doc) {
+    var getEmailComponent = function (doc) {
       return doc.visible ? 'contactVisible' : 'contactHidden';
     };
     var emailSchema = new mongoose.Schema({
-      address: {type: String, ressource: getEmailRessource},
-      type: {type: String, ressouceClass: getEmailRessource},
-      visible: {type: Boolean, ressource: 'contactSettings'}
+      address: {type: String, component: getEmailComponent},
+      type: {type: String, component: getEmailComponent},
+      visible: {type: Boolean, component: 'contactSettings'}
     });
 
     var userSchema = new mongoose.Schema({
-      name: {type: String, ressource: 'info'},
+      name: {type: String, component: 'info'},
       passwordHash: {type: String, select: false},
       emails: [emailSchema],
       settings: {
-        rememberMe: {type: Boolean, ressource: 'settings'},
+        rememberMe: {type: Boolean, component: 'settings'},
       },
-      father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', ressource: 'info'},
-      friends: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', ressource: 'info'}]
+      father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'},
+      friends: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'}]
     });
     userSchema.plugin(
-      authorize.ressourcePlugin,
+      authorize.componentsPlugin,
       {
-        getRessources: function (doc, action, data, done) {
+        getComponents: function (doc, action, data, done) {
           // user has full access to info and settings
           if (data.userId === doc._id) return done(null, ['info', 'settings']);
           // everyone has read access to info
@@ -128,7 +128,7 @@ describe('ressourcePlugin', function () {
             {
               team: team_andre,
               action: 'read',
-              ressource: 'info'
+              component: 'info'
             }
           ];
 

@@ -17,8 +17,8 @@ describe('permissionPlugin', function () {
         orga1.getPermissions(function (err, permissions) {
           if (err) return done(err);
           permissions.should.eql([
-            {userIds: [user2._id, user1._id], action: 'read', ressource: 'orgaInfo'},
-            {userIds: [user1._id], action: 'write', ressource: 'orgaInfo'}
+            {userIds: [user2._id, user1._id], action: 'read', component: 'orgaInfo'},
+            {userIds: [user1._id], action: 'write', component: 'orgaInfo'}
           ]);
           done();
         });
@@ -61,28 +61,28 @@ describe('permissionPlugin', function () {
     });
   }); // hasPermission
 
-  describe('#getRessources', function () {
-    it('should return the list of valid ressources for an action', function (done) {
+  describe('#getComponents', function () {
+    it('should return the list of valid components for an action', function (done) {
 
       utils.insertDocs(function (err, user1, user2, team1, team2, orga1) {
         if (err) return done(err);
         // see definition of teams + permissions in utils.js
 
-        function checkRessources(target, userId, action, expected) {
+        function checkComponents(target, userId, action, expected) {
           return function (cb) {
-            target.getRessources(userId, action, function (err, ressources) {
+            target.getComponents(userId, action, function (err, components) {
               if (err) return cb(err);
-              ressources.should.eql(expected);
+              components.should.eql(expected);
               cb();
             });
           };
         }
 
         async.series([
-          checkRessources(orga1, user1._id, 'read', ['orgaInfo']),
-          checkRessources(orga1, user2._id, 'write', [])
+          checkComponents(orga1, user1._id, 'read', ['orgaInfo']),
+          checkComponents(orga1, user2._id, 'write', [])
         ], done);
       });
     });
-  }); // getRessources
+  }); // getComponents
 });
