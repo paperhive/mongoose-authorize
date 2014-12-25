@@ -1,16 +1,128 @@
 # mongoose-authorize [![Build Status](https://travis-ci.org/paperhub/mongoose-authorize.svg)](https://travis-ci.org/paperhub/mongoose-authorize) [![Dependency Status](https://gemnasium.com/paperhub/mongoose-authorize.svg)](https://gemnasium.com/paperhub/mongoose-authorize)
 
-An **authorization** (*not* authentication) plugin for mongoose. It offers the following plugins:
+An **authorization** (*not* authentication) plugin for mongoose.
 
+Usually not all fields of a document in your database are supposed to be read
+or written by all users of your application. This authorization plugin allows
+you to
+
+ * group your schema fields into components
+ * specify permissions: which components can be accessed by whom (either
+   statically or dynamically and user-configurable in your documents)
+ * organize multiple users in teams
+ * serialize a mongoose document: get all fields for which a user has read
+   access (also takes care of nested schemas and populated referenced documents)
+ * verify and set user-provided data in a mongoose document: only set the fields
+   for which a user has write access (note: work in progress)
+
+The permission module in `mongoose-authorize` can be seen as a
+*role-based access control (RBAC)* system. Unlike other modules (e.g.,
+[mongoose-rbac](https://github.com/bryandragon/mongoose-rbac)), the permissions
+in `mongoose-authorize` do not have to be specified globally (e.g., inside the
+user model) but can be maintained inside other entities such as organizations.
+
+## Example
+
+The core idea of `mongoose-authorize` is to split a mongoose schema into
+*components* for which you can then define permissions. Let's take a look at
+the following example:
+```javascript
+var userSchema = new mongoose.Schema({
+  name: {type: String, component: 'info'},
+  passwordHash: String,
+  father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'},
+  settings: {
+    rememberMe: {type: Boolean, component: 'settings'}
+  }
+});
+```
+Here we have the two components:
+ * *info*: can be read by everyone but only written by the owner
+ * *settings*: can only be read and written by the owner
+
+This can be achieved with the `componentsPlugin`:
+```javascript
+var authorize = require('mongoose-authorize')();
+userSchema.plugin(authorize.componentsPlugin, {
+  permissions: {
+    defaults: {read: ['info']},
+    fromFun: function (doc, userId, action, done) {
+      // owner has full access to info and settings
+      if (doc._id.equals(userId)) return done(null, ['info', 'settings']);
+      // otherwise: no access (except the defaults specified above)
+      done(null, []);
+    }
+  }
+});
+```
+
+Let's create the model and add two users:
+```javascript
+mongoose.model('User', userSchema).create(
+  {name: 'Luke', passwordHash: '0afb5c', settings: {rememberMe: true}},
+  {name: 'Darth', passwordHash: 'd4c18b', settings: {rememberMe: false}},
+  function (err, luke, darth) {
+    luke.father = darth;
+    luke.save(function (err, luke) { /* ... */ });
+  }
+);
+```
+
+In order to demonstrate this plugin's ability to properly process referenced
+documents we populate Luke's `father` field:
+```javascript
+luke.populate('father', function (err, luke) { /* ... */ });
+```
+
+Let's assume that Luke is authenticated and wants to have a JSON-representation
+of himself:
+```javascript
+luke.authorizedToJSON(luke._id, function (err, json) {
+  console.log(json);
+});
+```
+Result:
+```
+{ name: 'Luke',
+  settings: { rememberMe: true },
+  father: { name: 'Darth', _id: '549af64bd25236066b30dbe1' },
+  _id: '549af64bd25236066b30dbe0' }
+```
+
+Now let's assume that Darth is authenticated and wants to have a
+JSON-representation of his son:
+```javascript
+luke.authorizedToJSON(darth._id, function (err, json) {
+  console.log(json);
+});
+```
+Result:
+```javascript
+{ name: 'Luke',
+  father:
+   { name: 'Darth',
+     settings: { rememberMe: false },
+     _id: '549af64bd25236066b30dbe1' },
+  _id: '549af64bd25236066b30dbe0' }
+```
+Note that Luke's settings are missing in Darth's representation. However, Darth
+is allowed to see his own settings in the populated `father` field.
+
+
+## Documentation
+
+`mongoose-authorize` offers the following plugins:
+
+ * [componentsPlugin](#componentsplugin)
  * [teamPlugin](#teamplugin)
  * [permissionsPlugin](#permissionsplugin)
 
-For this README, let's require the module as
-```javascript
-var authorize = require('mongoose-authorize');
-```
 
-## teamPlugin
+### componentsPlugin
+
+TODO
+
+### teamPlugin
  * organize users in teams
  * teams can be nested arbitrarily (cycles are properly handled)
 
@@ -84,7 +196,7 @@ team_readers.getUserIds(function (err, userIds) {
 });
 ```
 
-## permissionsPlugin
+### permissionsPlugin
  * grant and check permissions for actions on ressources to teams
 
 Assume you store articles and you want to grant permissions on this article. Let's use the `permissionsPlugin` for this:
