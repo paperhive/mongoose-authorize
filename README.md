@@ -82,7 +82,7 @@ luke.authorizedToJSON(luke._id, function (err, json) {
 });
 ```
 Result:
-```
+```javascript
 { name: 'Luke',
   settings: { rememberMe: true },
   father: { name: 'Darth', _id: '549af64bd25236066b30dbe1' },
