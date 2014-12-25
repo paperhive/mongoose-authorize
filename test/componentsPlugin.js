@@ -25,7 +25,7 @@ describe('componentsPlugin', function () {
 
     var userSchema = new mongoose.Schema({
       name: {type: String, component: 'info'},
-      passwordHash: {type: String, select: false},
+      passwordHash: {type: String},
       emails: [emailSchema],
       settings: {
         rememberMe: {type: Boolean, component: 'settings'},
@@ -36,14 +36,23 @@ describe('componentsPlugin', function () {
     userSchema.plugin(
       authorize.componentsPlugin,
       {
-        getComponents: function (doc, action, data, done) {
-          // user has full access to info and settings
-          if (data.userId === doc._id) return done(null, ['info', 'settings']);
-          // everyone has read access to info
-          if (action === 'read') return done(null, ['info']);
-          // everything else is denied
-          done(null, []);
-        },
+        permissions: {
+          defaults: {
+            read: ['info', 'contactVisible']
+          },
+          fromFun: function (doc, userId, action, done) {
+            // user has full access to info and settings
+            if (doc._id.equals(userId)) return done(
+              null,
+              ['info', 'settings', 'contactVisible', 'contactHidden',
+              'contactSettings']
+            );
+            // everyone has read access to info
+            if (action === 'read') return done(null, ['info']);
+            // everything else is denied
+            done(null, []);
+          },
+        }
       }
     );
     userSchema.plugin(authorize.permissionsPlugin, {userModel: 'User'});
@@ -53,7 +62,7 @@ describe('componentsPlugin', function () {
       async.waterfall([
         // check permission
         function (cb) {
-          if (userId != user._id) return cb(new Error('permission denied'));
+          if (!user._id.equals(userId)) return cb(new Error('permission denied'));
           cb();
         },
         // generate salt
@@ -82,81 +91,61 @@ describe('componentsPlugin', function () {
       function createUsers (cb) {
         mongoose.model('User').create(
           {
-            name: 'Luke',
-            emails: [
-              {address: 'luke@skywalk.er', type: 'work', visible: true}
-            ]
+            name: 'Luke', passwordHash: '0afb5c', settings: {rememberMe: true}
+          },
+          {
+            name: 'Darth', passwordHash: 'd4c18b', settings: {rememberMe: false}
           },
           cb
         );
       },
-      //function createTeams (luke, cb) {
-      //  mongoose.model('Team').create(
+      function setFather (luke, darth, cb) {
+        luke.father = darth;
+        luke.save(cb);
+      },
+      function populate (luke, _, cb) {
+        luke.populate('father', cb);
+      },
+      function print (luke, cb) {
+        cb();
+      }
     ], done);
 
   });
 
   describe('#authToJSON', function () {
     it('should only return fields the user is allowed to read', function (done) {
-      async.waterfall([
-        function (cb) {
-          mongoose.model('User').create({
-            name: 'André',
-            passwordHash: '0eaf4f4c',
-            emails: [
-              {address: 'andre@gaul.io', type: 'private', visible: true}
-            ],
-            settings: {rememberMe: true},
-          }, {
-            name: 'Schlömi',
-            settings: {rememberMe: false}
-          }, cb);
-        },
-        function (andre, schloemi, cb) {
-          mongoose.model('Team').create({
-            name: 'andre',
-            members: {
-              users: [andre]
-            }
-          }, function (err, team_andre) {
-            cb(null, andre, schloemi, team_andre);
-          });
-        },
-        function (andre, schloemi, team_andre, cb) {
-          andre.knows = schloemi;
-          andre.permissions = [
-            {
-              team: team_andre,
-              action: 'read',
-              component: 'info'
-            }
-          ];
-
-          andre.save(cb);
-        },
-        function (andre, _, cb) {
-          andre.setPassword(andre._id, 'doener', function (err) {
+      // check a document
+      function checkAuthorizedToJSON(doc, userId, expected) {
+        return function (cb) {
+          doc.authorizedToJSON(userId, undefined, function (err, json) {
             if (err) return cb(err);
-            cb(null, andre);
-          });
-        },
-        function (andre, cb) {
-          andre.populate('knows', function (err) {
-            if (err) return cb(err);
-            cb (null, andre);
-          });
-        },
-        function (andre, cb) {
-          andre.authorizedToJSON(andre._id, function (err, json) {
-            cb(null, andre);
-          });
-        },
-        function (andre, cb) {
-          andre.authorizedToJSON('wurst', function (err, json) {
+            json.should.eql(expected);
             cb();
           });
+        };
+      }
+      mongoose.model('User').findOne({name: 'Luke'}).populate('father').exec(
+        function (err, luke) {
+          mongoose.model('User').findOne({name: 'Darth'}, function (err, darth) {
+            async.series([
+              checkAuthorizedToJSON(luke, luke._id, {
+                name: 'Luke', settings: {rememberMe: true},
+                father: {name: 'Darth', _id: darth._id.toString()},
+                _id: luke._id.toString()
+              }),
+              checkAuthorizedToJSON(luke, darth._id, {
+                name: 'Luke',
+                father: {name: 'Darth', _id: darth._id.toString(),
+                  settings: {rememberMe: false}
+                },
+                _id: luke._id.toString()
+              })
+            ],
+            done);
+          });
         }
-      ], done);
+      );
     });
   });
 
