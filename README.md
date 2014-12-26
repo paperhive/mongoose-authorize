@@ -121,6 +121,9 @@ is allowed to see his own settings in the populated `father` field.
 
 ### componentsPlugin
 
+*Note: see the [above example](#example) for a brief in-use explanation of this
+plugin.*
+
 The `componentsPlugin` works as follows for a schema
 
  1. A `component` string can be assigned to each field of the schema.
@@ -139,8 +142,7 @@ The `componentsPlugin` works as follows for a schema
      * `fromDoc`: a boolean that indicates if the permissions should be read
        from the document via the [permissionsPlugin](#permissionsplugin).
 
-The [above example](#example) also explains how the `componentsPlugin` can be
-used.
+For a mongoose document `doc`, the plugin then offers the following methods:
 
 #### doc.authorizedComponents(userId, action, callback)
 
