@@ -36,7 +36,8 @@ var userSchema = new mongoose.Schema({
   }
 });
 ```
-Here we have the two components:
+Here we have used two components which are intended to impose the following
+permissions:
  * *info*: can be read by everyone but only written by the owner
  * *settings*: can only be read and written by the owner
 
@@ -120,7 +121,49 @@ is allowed to see his own settings in the populated `father` field.
 
 ### componentsPlugin
 
-TODO
+The `componentsPlugin` works as follows for a schema
+
+ 1. A `component` string can be assigned to each field of the schema.
+ 2. The `componentPlugin` is loaded into the schema. You have to define
+    how the permissions of a user (identified by the user's document id, the
+    `userId`) are obtained. Therefor, the plugin accepts a `permissions` key in
+    the options object with the following sub-keys:
+
+     * `defaults`: an object mapping action strings to an array of component
+       strings. Useful for default permissions such as "all users are able to
+       access the fields belonging to the component `'info'`.
+     * `fromFun(doc, userId, action, callback)`: a function that computes an
+       array of components where the `userId` can carry out the specified
+       `action` on the given `doc`. The `callback` has the signature
+       `callback(err, components)`.
+     * `fromDoc`: a boolean that indicates if the permissions should be read
+       from the document via the [permissionsPlugin](#permissionsplugin).
+
+The [above example](#example) also explains how the `componentsPlugin` can be
+used.
+
+#### doc.authorizedComponents(userId, action, callback)
+
+Compile an array of all components where the provided `userId` has the
+permission to carry out the specified `action`.
+
+ * `userId`: document id of a user.
+ * `action`: a string representing an action (such as `'read'` or `'write'`).
+ * `callback(err, components)`: the callback to be called where `components` is
+   an array of components.
+
+#### doc.authorizedToJSON(userId, [options], callback)
+
+Creates a JSON-representation of the document tailored for the provided
+`userId`, i.e., an object where only the fields of the components are visible
+where the provided `userId` has `'read'` access.
+
+ * `userId`: document id of a user.
+ * `options`: options passed to
+   [`toJSON()`](http://mongoosejs.com/docs/api.html#document_Document-toJSON)
+   which is used internally to serialize the document.
+ * `callback(err, json)`: the callback to be called with the serialized JSON
+   object.
 
 ### teamPlugin
  * organize users in teams
