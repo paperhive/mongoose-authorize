@@ -14,8 +14,8 @@ describe('componentsPlugin', function () {
 
   // define models
   beforeEach(function (done) {
-    var getEmailComponent = function (doc) {
-      return doc.visible ? 'contactVisible' : 'contactHidden';
+    var getEmailComponent = function (doc, done) {
+      return done(null, doc.visible ? 'contactVisible' : 'contactHidden');
     };
     var emailSchema = new mongoose.Schema({
       address: {type: String, component: getEmailComponent},

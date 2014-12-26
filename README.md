@@ -126,7 +126,13 @@ plugin.*
 
 The `componentsPlugin` works as follows for a schema
 
- 1. A `component` string can be assigned to each field of the schema.
+ 1. A `component` can be assigned to each field of the schema. The `component`
+    can either be
+    * a string: the static name of the component.
+    * a function `component(doc, callback)` where `doc` is the document
+      instance. The function should call the `callback` with a string (the
+      name of the component). This can be useful, e.g., for controlling the
+      visibility of fields with a `visible` field in your document.
  2. The `componentPlugin` is loaded into the schema. You have to define
     how the permissions of a user (identified by the user's document id, the
     `userId`) are obtained. Therefore, the plugin accepts a `permissions` key in
