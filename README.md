@@ -129,7 +129,7 @@ The `componentsPlugin` works as follows for a schema
  1. A `component` string can be assigned to each field of the schema.
  2. The `componentPlugin` is loaded into the schema. You have to define
     how the permissions of a user (identified by the user's document id, the
-    `userId`) are obtained. Therefor, the plugin accepts a `permissions` key in
+    `userId`) are obtained. Therefore, the plugin accepts a `permissions` key in
     the options object with the following sub-keys:
 
      * `defaults`: an object mapping action strings to an array of component
