@@ -29,9 +29,10 @@ describe('componentsPlugin', function () {
       emails: [emailSchema],
       settings: {
         rememberMe: {type: Boolean, component: 'settings'},
+        lightsaber: {type: String, component: 'info'}
       },
       father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'},
-      friends: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'}]
+      siblings: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'}]
     });
     userSchema.plugin(
       authorize.componentsPlugin,
@@ -56,30 +57,6 @@ describe('componentsPlugin', function () {
       }
     );
     userSchema.plugin(authorize.permissionsPlugin, {userModel: 'User'});
-
-    userSchema.methods.setPassword = function (userId, password, done) {
-      var user = this;
-      async.waterfall([
-        // check permission
-        function (cb) {
-          if (!user._id.equals(userId)) return cb(new Error('permission denied'));
-          cb();
-        },
-        // generate salt
-        function (cb) {
-          bcrypt.genSalt(10, cb);
-        },
-        // generate hash
-        function (salt, cb) {
-          bcrypt.hash(password, salt, cb);
-        },
-        // store password
-        function (hash, cb) {
-          user.passwordHash = hash;
-          cb();
-        }
-      ], done);
-    };
     mongoose.model('User', userSchema);
 
     // define Team
@@ -91,61 +68,97 @@ describe('componentsPlugin', function () {
       function createUsers (cb) {
         mongoose.model('User').create(
           {
-            name: 'Luke', passwordHash: '0afb5c', settings: {rememberMe: true}
+            name: 'Luke', passwordHash: '0afb5c',
+            settings: {rememberMe: true, lightsaber: 'blue'},
+            emails: [
+              {address: 'luke@skywalk.er', type: 'family', visible: true}
+            ]
           },
           {
-            name: 'Darth', passwordHash: 'd4c18b', settings: {rememberMe: false}
+            name: 'Leia', passwordHash: 'caffee',
+            settings: {rememberMe: true, lightsaber: 'blue'},
+            emails: [
+              {address: 'leia@skywalk.er', type: 'family', visible: false},
+              {address: 'leia@rebels.io', type: 'work', visible: true}
+            ]
+          },
+          {
+            name: 'Darth', passwordHash: 'd4c18b',
+            settings: {rememberMe: false, lightsaber: 'red'}
           },
           cb
         );
       },
-      function setFather (luke, darth, cb) {
+      function setFamily (luke, leia, darth, cb) {
         luke.father = darth;
-        luke.save(cb);
-      },
-      function populate (luke, _, cb) {
-        luke.populate('father', cb);
-      },
-      function print (luke, cb) {
-        cb();
+        luke.siblings = [leia];
+        leia.father = darth;
+        leia.siblings = [luke];
+        async.parallel(_.map([luke, leia], function (doc) {
+          return function (cb) {doc.save(cb);};
+        }), cb);
       }
     ], done);
-
   });
 
-  describe('#authToJSON', function () {
-    it('should only return fields the user is allowed to read', function (done) {
-      // check a document
-      function checkAuthorizedToJSON(doc, userId, expected) {
-        return function (cb) {
-          doc.authorizedToJSON(userId, undefined, function (err, json) {
-            if (err) return cb(err);
-            json.should.eql(expected);
-            cb();
-          });
-        };
+  // get the users as key-value pairs
+  function getUsers(cb) {
+    async.series({
+      // get luke
+      luke: function (cb) {
+        mongoose.model('User').findOne({name: 'Luke'}, cb);
+      },
+      // get leia and populate everything
+      leia: function (cb) {
+        mongoose.model('User').findOne({name: 'Leia'}).
+          populate('father siblings').exec(cb);
+      },
+      // get darth and populate everything
+      darth: function (cb) {
+        mongoose.model('User').findOne({name: 'Darth'}, cb);
       }
-      mongoose.model('User').findOne({name: 'Luke'}).populate('father').exec(
-        function (err, luke) {
-          mongoose.model('User').findOne({name: 'Darth'}, function (err, darth) {
-            async.series([
-              checkAuthorizedToJSON(luke, luke._id, {
-                name: 'Luke', settings: {rememberMe: true},
-                father: {name: 'Darth', _id: darth._id.toString()},
-                _id: luke._id.toString()
-              }),
-              checkAuthorizedToJSON(luke, darth._id, {
-                name: 'Luke',
-                father: {name: 'Darth', _id: darth._id.toString(),
-                  settings: {rememberMe: false}
-                },
-                _id: luke._id.toString()
-              })
-            ],
-            done);
+    }, cb);
+  }
+
+  // check a document
+  function checkAuthorizedToJSON(doc, userId, expected) {
+    return function (cb) {
+      doc.authorizedToJSON(userId, undefined, function (err, json) {
+        if (err) return cb(err);
+        json.should.eql(expected);
+        cb();
+      });
+    };
+  }
+
+  describe('#authToJSON', function () {
+    it('should not return fields without component', function (done) {
+      getUsers(function (err, docs) {
+        async.series(_.map(docs, function (doc) {
+          return function (cb) {
+            doc.authorizedToJSON(doc._id, function (err, json) {
+              should.not.exist(json.passwordHash);
+              cb();
+            });
+          };
+        }), done);
+      });
+    });
+    it('should only return fields the user is allowed to read', function (done) {
+      getUsers(function (err, docs) {
+        docs.luke.authorizedToJSON(null, function (err, json) {
+          json.should.eql({
+            _id: docs.luke._id.toString(),
+            name: 'Luke',
+            emails: [{address: 'luke@skywalk.er', type: 'family',
+              _id: docs.luke.emails[0]._id.toString()}],
+            father: docs.darth._id.toString(),
+            settings: {lightsaber: 'blue'},
+            siblings: [docs.leia._id.toString()]
           });
-        }
-      );
+          done();
+        });
+      });
     });
   });
 
