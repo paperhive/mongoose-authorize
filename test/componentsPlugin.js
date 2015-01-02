@@ -1,3 +1,4 @@
+'use strict';
 var mongoose = require('mongoose');
 var should = require('should');
 var async = require('async');

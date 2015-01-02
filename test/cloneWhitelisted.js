@@ -1,3 +1,4 @@
+'use strict';
 var should = require('should');
 var _ = require('lodash');
 
@@ -15,7 +16,7 @@ var obj = {
 };
 
 describe('cloneWhitelisted()', function () {
-  cloneWhitelisted = authorize.cloneWhitelisted;
+  var cloneWhitelisted = authorize.cloneWhitelisted;
 
   it('should return undefined for a false or undefined whitelist', function () {
     _.each(
