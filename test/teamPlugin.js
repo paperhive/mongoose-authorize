@@ -3,13 +3,12 @@ var should = require('should');
 var async = require('async');
 var _ = require('lodash');
 
-var authorize = require('../');
 var utils = require('./utils');
 
-// clear database before each run
-beforeEach(utils.clearDB);
-
 describe('teamPlugin', function () {
+  beforeEach(utils.clearDB);
+  beforeEach(utils.defineModels);
+
   describe('#getUserIds', function () {
     it(
       'should allow insertion of users and teams as described in the docs',
@@ -64,7 +63,7 @@ describe('teamPlugin', function () {
     );
 
     it('should return an empty array without members', function (done) {
-      var team = new utils.models.Team({name: 'andrenarchy\'s friends'});
+      var team = new (mongoose.model('Team'))({name: 'andrenarchy\'s friends'});
       team.getUserIds(function (err, userIds) {
         if (err) return done(err);
         [].should.eql(userIds);
@@ -73,9 +72,9 @@ describe('teamPlugin', function () {
     });
 
     it('should return array of user ids without team members', function (done) {
-      var user1 = new utils.models.User({name: 'andrenarchy'});
-      var user2 = new utils.models.User({name: 'nschloe'});
-      var team = new utils.models.Team({
+      var user1 = new (mongoose.model('User'))({name: 'andrenarchy'});
+      var user2 = new (mongoose.model('User'))({name: 'nschloe'});
+      var team = new (mongoose.model('Team'))({
         name: 'PaperHub',
         members: {
           users: [user1._id, user2._id]

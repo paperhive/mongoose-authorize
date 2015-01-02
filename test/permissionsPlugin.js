@@ -3,13 +3,13 @@ var should = require('should');
 var async = require('async');
 var _ = require('lodash');
 
-var authorize = require('../');
 var utils = require('./utils');
 
-// clear database before each run
-beforeEach(utils.clearDB);
-
 describe('permissionPlugin', function () {
+
+  beforeEach(utils.clearDB);
+  beforeEach(utils.defineModels);
+
   describe('#getPermissions', function () {
     it('should return permissions with arrays of userIds', function (done) {
       utils.insertDocs(function (err, user1, user2, team1, team2, orga1) {
@@ -17,14 +17,14 @@ describe('permissionPlugin', function () {
         orga1.getPermissions(function (err, permissions) {
           if (err) return done(err);
           permissions.should.eql([
-            {userIds: [user2._id, user1._id], action: 'read', target: 'orgaInfo'},
-            {userIds: [user1._id], action: 'write', target: 'orgaInfo'}
+            {userIds: [user2._id, user1._id], action: 'read', component: 'orgaInfo'},
+            {userIds: [user1._id], action: 'write', component: 'orgaInfo'}
           ]);
           done();
         });
       });
     });
-  });
+  }); // getPermissions
 
   describe('#hasPermissions', function () {
     it('should return true/false based on permissions', function (done) {
@@ -59,5 +59,30 @@ describe('permissionPlugin', function () {
         done();
       });
     });
-  });
+  }); // hasPermission
+
+  describe('#getComponents', function () {
+    it('should return the list of valid components for an action', function (done) {
+
+      utils.insertDocs(function (err, user1, user2, team1, team2, orga1) {
+        if (err) return done(err);
+        // see definition of teams + permissions in utils.js
+
+        function checkComponents(target, userId, action, expected) {
+          return function (cb) {
+            target.getComponents(userId, action, function (err, components) {
+              if (err) return cb(err);
+              components.should.eql(expected);
+              cb();
+            });
+          };
+        }
+
+        async.series([
+          checkComponents(orga1, user1._id, 'read', ['orgaInfo']),
+          checkComponents(orga1, user2._id, 'write', [])
+        ], done);
+      });
+    });
+  }); // getComponents
 });

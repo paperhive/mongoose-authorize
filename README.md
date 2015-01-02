@@ -1,16 +1,179 @@
 # mongoose-authorize [![Build Status](https://travis-ci.org/paperhub/mongoose-authorize.svg)](https://travis-ci.org/paperhub/mongoose-authorize) [![Dependency Status](https://gemnasium.com/paperhub/mongoose-authorize.svg)](https://gemnasium.com/paperhub/mongoose-authorize)
 
-An **authorization** (*not* authentication) plugin for mongoose. It offers the following plugins:
+An **authorization** (*not* authentication) plugin for mongoose.
 
+Usually not all fields of a document in your database are supposed to be read
+or written by all users of your application. This authorization plugin allows
+you to
+
+ * group your schema fields into components
+ * specify permissions: which components can be accessed by whom (either
+   statically or dynamically and user-configurable in your documents)
+ * organize multiple users in teams
+ * serialize a mongoose document: get all fields for which a user has read
+   access (also takes care of nested schemas and populated referenced documents)
+ * verify and set user-provided data in a mongoose document: only set the fields
+   for which a user has write access (note: work in progress)
+
+The permission module in `mongoose-authorize` can be seen as a
+*role-based access control (RBAC)* system. Unlike other modules (e.g.,
+[mongoose-rbac](https://github.com/bryandragon/mongoose-rbac)), the permissions
+in `mongoose-authorize` do not have to be specified globally (e.g., inside the
+user model) but can be maintained inside other entities such as organizations.
+
+## Example
+
+The core idea of `mongoose-authorize` is to split a mongoose schema into
+*components* for which you can then define permissions. Let's take a look at
+the following example:
+```javascript
+var userSchema = new mongoose.Schema({
+  name: {type: String, component: 'info'},
+  passwordHash: String,
+  father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'},
+  settings: {
+    rememberMe: {type: Boolean, component: 'settings'}
+  }
+});
+```
+Here we have used two components which are intended to impose the following
+permissions:
+ * *info*: can be read by everyone but only written by the owner
+ * *settings*: can only be read and written by the owner
+
+This can be achieved with the `componentsPlugin`:
+```javascript
+var authorize = require('mongoose-authorize')();
+userSchema.plugin(authorize.componentsPlugin, {
+  permissions: {
+    defaults: {read: ['info']},
+    fromFun: function (doc, userId, action, done) {
+      // owner has full access to info and settings
+      if (doc._id.equals(userId)) return done(null, ['info', 'settings']);
+      // otherwise: no access (except the defaults specified above)
+      done(null, []);
+    }
+  }
+});
+```
+
+Let's create the model and add two users:
+```javascript
+mongoose.model('User', userSchema).create(
+  {name: 'Luke', passwordHash: '0afb5c', settings: {rememberMe: true}},
+  {name: 'Darth', passwordHash: 'd4c18b', settings: {rememberMe: false}},
+  function (err, luke, darth) {
+    luke.father = darth;
+    luke.save(function (err, luke) { /* ... */ });
+  }
+);
+```
+
+In order to demonstrate this plugin's ability to properly process referenced
+documents we populate Luke's `father` field:
+```javascript
+luke.populate('father', function (err, luke) { /* ... */ });
+```
+
+Let's assume that Luke is authenticated and wants to have a JSON-representation
+of himself:
+```javascript
+luke.authorizedToJSON(luke._id, function (err, json) {
+  console.log(json);
+});
+```
+Result:
+```javascript
+{ name: 'Luke',
+  settings: { rememberMe: true },
+  father: { name: 'Darth', _id: '549af64bd25236066b30dbe1' },
+  _id: '549af64bd25236066b30dbe0' }
+```
+
+Now let's assume that Darth is authenticated and wants to have a
+JSON-representation of his son:
+```javascript
+luke.authorizedToJSON(darth._id, function (err, json) {
+  console.log(json);
+});
+```
+Result:
+```javascript
+{ name: 'Luke',
+  father:
+   { name: 'Darth',
+     settings: { rememberMe: false },
+     _id: '549af64bd25236066b30dbe1' },
+  _id: '549af64bd25236066b30dbe0' }
+```
+Note that Luke's settings are missing in Darth's representation. However, Darth
+is allowed to see his own settings in the populated `father` field.
+
+
+## Documentation
+
+`mongoose-authorize` offers the following plugins:
+
+ * [componentsPlugin](#componentsplugin)
  * [teamPlugin](#teamplugin)
  * [permissionsPlugin](#permissionsplugin)
 
-For this README, let's require the module as
-```javascript
-var authorize = require('mongoose-authorize');
-```
 
-## teamPlugin
+### componentsPlugin
+
+*Note: see the [above example](#example) for a brief in-use explanation of this
+plugin.*
+
+The `componentsPlugin` works as follows for a schema
+
+ 1. A `component` can be assigned to each field of the schema. The `component`
+    can either be
+    * a string: the static name of the component.
+    * a function `component(doc, callback)` where `doc` is the document
+      instance. The function should call the `callback` with a string (the
+      name of the component). This can be useful, e.g., for controlling the
+      visibility of fields with a `visible` field in your document.
+ 2. The `componentPlugin` is loaded into the schema. You have to define
+    how the permissions of a user (identified by the user's document id, the
+    `userId`) are obtained. Therefore, the plugin accepts a `permissions` key in
+    the options object with the following sub-keys:
+
+     * `defaults`: an object mapping action strings to an array of component
+       strings. Useful for default permissions such as "all users are able to
+       access the fields belonging to the component `'info'`.
+     * `fromFun(doc, userId, action, callback)`: a function that computes an
+       array of components where the `userId` can carry out the specified
+       `action` on the given `doc`. The `callback` has the signature
+       `callback(err, components)`.
+     * `fromDoc`: a boolean that indicates if the permissions should be read
+       from the document via the [permissionsPlugin](#permissionsplugin).
+
+For a mongoose document `doc`, the plugin then offers the following methods:
+
+#### doc.authorizedComponents(userId, action, callback)
+
+Compile an array of all components where the provided `userId` has the
+permission to carry out the specified `action`.
+
+ * `userId`: document id of a user.
+ * `action`: a string representing an action (such as `'read'` or `'write'`).
+ * `callback(err, components)`: the callback to be called where `components` is
+   an array of components.
+
+#### doc.authorizedToJSON(userId, [options], callback)
+
+Creates a JSON-representation of the document tailored for the provided
+`userId`, i.e., an object where only the fields of the components are visible
+where the provided `userId` has `'read'` access.
+
+ * `userId`: document id of a user.
+ * `options`: options passed to
+   [`toJSON()`](http://mongoosejs.com/docs/api.html#document_Document-toJSON)
+   which is used internally to serialize the document.
+ * `callback(err, json)`: the callback to be called with the serialized JSON
+   object.
+
+### teamPlugin
  * organize users in teams
  * teams can be nested arbitrarily (cycles are properly handled)
 
@@ -84,7 +247,7 @@ team_readers.getUserIds(function (err, userIds) {
 });
 ```
 
-## permissionsPlugin
+### permissionsPlugin
  * grant and check permissions for actions on ressources to teams
 
 Assume you store articles and you want to grant permissions on this article. Let's use the `permissionsPlugin` for this:
@@ -100,14 +263,14 @@ mongoose.model('Article').create(
     title: 'most interesting article ever',
     body: 'lorem ipsum',
     permissions: [
-      {team: team_readers, action: 'read', target: 'body'},
-      {team: team_admins, action: 'write', target: 'body'}
+      {team: team_readers, action: 'read', ressource: 'body'},
+      {team: team_admins, action: 'write', ressource: 'body'}
     ]
   },
   function (err, article) {
     if (err) return console.error(err);
     // use article, e.g., article.getPermissions() or
-    // article.hasPermissions(userId, action, target), see below
+    // article.hasPermissions(userId, action, ressource), see below
   }
 );
 ```
@@ -119,7 +282,7 @@ Returns an array of all permissions with flattened userIds.
  * `callback(err, permissions)` where permissions is an array of permissions, each having the properties
     * `userIds`: the provided team is resolved to userIds via [teamPlugin.getUserIds](#teamplugingetuseridscallback)
     * `action`: the string as provided in the permission
-    * `target`: the string as provided in the permission
+    * `ressource`: the string as provided in the permission
 
 ##### Example
 ```javascript
@@ -127,19 +290,19 @@ article.getPermissions(function (err, permissions) {
   if (err) return console.error(err);
   /* permissions contains:
     [
-      {userIds: [user_halligalli._id, user_hondanz._id], action: 'read', target: 'body'},
-      {userIds: [user_hondanz._id], action: 'write', target: 'body'},
+      {userIds: [user_halligalli._id, user_hondanz._id], action: 'read', ressource: 'body'},
+      {userIds: [user_hondanz._id], action: 'write', ressource: 'body'},
     ]
   */
 });
 ```
 
-#### permissionsPlugin.hasPermissions(userId, action, target, callback)
+#### permissionsPlugin.hasPermissions(userId, action, ressource, callback)
 
  * `userId`: a userId string
  * `action`: a string
- * `target`: a string
- * `callback(err, granted)`: `granted` is true if and only if the provided user has the permission to perform the specified action on the specified target.
+ * `ressource`: a string
+ * `callback(err, granted)`: `granted` is true if and only if the provided user has the permission to perform the specified action on the specified ressource.
 
 ##### Example
 ```javascript

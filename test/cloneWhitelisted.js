@@ -1,7 +1,8 @@
 var should = require('should');
 var _ = require('lodash');
 
-var authorize = require('../');
+var utils = require('./utils');
+var authorize = utils.authorize;
 var obj = {
   field1: 1,
   field2: 'foo',
