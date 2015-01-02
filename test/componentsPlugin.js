@@ -120,46 +120,119 @@ describe('componentsPlugin', function () {
     }, cb);
   }
 
-  // check a document
-  function checkAuthorizedToJSON(doc, userId, expected) {
-    return function (cb) {
-      doc.authorizedToJSON(userId, undefined, function (err, json) {
-        if (err) return cb(err);
-        json.should.eql(expected);
-        cb();
-      });
+  function getLukeForEveryone (docs) {
+    return {
+      _id: docs.luke._id.toString(),
+      name: 'Luke',
+      emails: [{address: 'luke@skywalk.er', type: 'family',
+        _id: docs.luke.emails[0]._id.toString()}],
+      father: docs.darth._id.toString(),
+      settings: {lightsaber: 'blue'},
+      siblings: [docs.leia._id.toString()]
+    };
+  }
+
+  function getLukeForLuke (docs) {
+    var luke = getLukeForEveryone(docs);
+    luke.settings.rememberMe = true;
+    luke.emails[0].visible = true;
+    return luke;
+  }
+
+  function getLeiaForEveryone (docs) {
+    return {
+      _id: docs.leia._id.toString(),
+      name: 'Leia',
+      settings: {lightsaber: 'blue'},
+      emails: [{address: 'leia@rebels.io', type: 'work',
+        _id: docs.leia.emails[1]._id.toString()}],
+      father: getDarthForEveryone(docs),
+      siblings: [getLukeForEveryone(docs)],
+    };
+  }
+
+  function getLeiaForLeia (docs) {
+    var leia = getLeiaForEveryone(docs);
+    leia.settings.rememberMe = true;
+    leia.emails = [
+      {address: 'leia@skywalk.er', type: 'family',
+        _id: docs.leia.emails[0]._id.toString(), visible: false},
+      {address: 'leia@rebels.io', type: 'work',
+        _id: docs.leia.emails[1]._id.toString(), visible: true}
+    ];
+    return leia;
+  }
+
+  function getDarthForEveryone (docs) {
+    return {
+      _id: docs.darth._id.toString(),
+      name: 'Darth',
+      settings: {lightsaber: 'red'}
     };
   }
 
   describe('#authToJSON', function () {
-    it('should not return fields without component', function (done) {
-      getUsers(function (err, docs) {
-        async.series(_.map(docs, function (doc) {
-          return function (cb) {
-            doc.authorizedToJSON(doc._id, function (err, json) {
-              should.not.exist(json.passwordHash);
-              cb();
-            });
-          };
-        }), done);
-      });
-    });
-    it('should only return fields the user is allowed to read', function (done) {
-      getUsers(function (err, docs) {
-        docs.luke.authorizedToJSON(null, function (err, json) {
-          json.should.eql({
-            _id: docs.luke._id.toString(),
-            name: 'Luke',
-            emails: [{address: 'luke@skywalk.er', type: 'family',
-              _id: docs.luke.emails[0]._id.toString()}],
-            father: docs.darth._id.toString(),
-            settings: {lightsaber: 'blue'},
-            siblings: [docs.leia._id.toString()]
-          });
-          done();
+
+    describe('all documents', function () {
+
+      it('should not return fields without component', function (done) {
+        getUsers(function (err, docs) {
+          async.series(_.map(docs, function (doc) {
+            return function (cb) {
+              doc.authorizedToJSON(doc._id, function (err, json) {
+                should.not.exist(json.passwordHash);
+                cb();
+              });
+            };
+          }), done);
         });
       });
     });
+
+    describe('unpopulated document (luke)', function () {
+
+      it('should return authorized fields for everyone', function (done) {
+        getUsers(function (err, docs) {
+          docs.luke.authorizedToJSON(null, function (err, json) {
+            json.should.eql(getLukeForEveryone(docs));
+            done();
+          });
+        });
+      });
+
+      it('should return authorized fields for luke', function (done) {
+        getUsers(function (err, docs) {
+          docs.luke.authorizedToJSON(docs.luke._id, function (err, json) {
+            json.should.eql(getLukeForLuke(docs));
+            done();
+          });
+        });
+      });
+    }); // unpopulated doc
+
+    describe('populated document (leia)', function () {
+
+      it('should return authorized fields for everyone', function (done) {
+        getUsers(function (err, docs) {
+          docs.leia.authorizedToJSON(null, function (err, json) {
+            json.should.eql(getLeiaForEveryone(docs));
+            done();
+          });
+        });
+      });
+
+      it('should return authorized fields for leia', function (done) {
+        getUsers(function (err, docs) {
+          docs.leia.authorizedToJSON(docs.leia._id, function (err, json) {
+            json.should.eql(getLeiaForLeia(docs));
+            done();
+          });
+        });
+      });
+
+    }); // populated doc
+
+
   });
 
 });
