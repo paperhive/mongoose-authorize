@@ -187,7 +187,7 @@ describe('componentsPlugin', function () {
           }), done);
         });
       });
-    });
+    }); // all docs
 
     describe('unpopulated document (luke)', function () {
 
@@ -229,10 +229,8 @@ describe('componentsPlugin', function () {
           });
         });
       });
-
     }); // populated doc
 
-
-  });
+  }); // #authToJSON
 
 });
