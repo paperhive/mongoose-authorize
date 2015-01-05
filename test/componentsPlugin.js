@@ -172,7 +172,7 @@ describe('componentsPlugin', function () {
     };
   }
 
-  describe('#authToJSON', function () {
+  describe('#authorizedToJSON', function () {
 
     describe('all documents', function () {
 
@@ -232,6 +232,27 @@ describe('componentsPlugin', function () {
       });
     }); // populated doc
 
-  }); // #authToJSON
+  }); // #authorizedToJSON
+
+  describe('#authorizedFromJSON', function () {
+
+    describe('unpopulated document (luke)', function () {
+      it('should update authorized fields', function (done) {
+        getUsers(function (err, docs) {
+          docs.luke.authorizedFromJSON(docs.luke._id, {
+            settings: {rememberMe: false}
+          }, function (err) {
+            if (err) return done(err);
+            docs.luke.save(function (err, luke) {
+              if (err) return done(err);
+              luke.settings.rememberMe.should.eql(false);
+              done();
+            });
+          });
+        });
+      });
+
+    }); // all docs
+  }); // authorizedFromJSON
 
 });
