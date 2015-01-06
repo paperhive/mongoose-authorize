@@ -261,12 +261,29 @@ describe('componentsPlugin', function () {
         });
       });
 
-      it('should deny updating an unauthorized field', function (done) {
+      it('should deny updating if user has no permissions', function (done) {
         getUsers(function (err, docs) {
+          var original = docs.luke.toJSON();
           checkAuthorizedFromJSON(
-            docs.luke, docs.luke._id, {_id: 'foo'},
+            docs.luke, docs.leia._id,
+            {name: 'Luke Skywalker', settings: {rememberMe: false}},
             function (err, luke) {
               should(err).be.an.Error;
+              original.should.eql(docs.luke.toJSON());
+              return done();
+            }
+          );
+        });
+      });
+
+      it('should deny updating an unauthorized field', function (done) {
+        getUsers(function (err, docs) {
+          var original = docs.luke.toJSON();
+          checkAuthorizedFromJSON(
+            docs.luke, docs.luke._id, {passwordHash: 'foo'},
+            function (err, luke) {
+              should(err).be.an.Error;
+              original.should.eql(docs.luke.toJSON());
               return done();
             }
           );
@@ -276,11 +293,14 @@ describe('componentsPlugin', function () {
       it('should deny updating mixed authorized and unauthorized fields',
         function (done) {
           getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
             checkAuthorizedFromJSON(
               docs.luke, docs.luke._id,
               {name: 'Luke Skywalker', _id: 'foo'},
               function (err, luke) {
                 should(err).be.an.Error;
+                // TODO: keep unchanged object
+                // original.should.eql(docs.luke.toJSON());
                 return done();
               }
             );
@@ -289,6 +309,24 @@ describe('componentsPlugin', function () {
       );
 
     }); // unpopulated docs
+
+    describe('populated document (leia)', function () {
+
+      it('should update populated and authorized fields', function (done) {
+        getUsers(function (err, docs) {
+          checkAuthorizedFromJSON(
+            docs.leia, docs.leia._id,
+            {father: docs.luke._id.toString()},
+            function (err, leia) {
+              if (err) return done(err);
+              should(docs.luke._id.equals(leia.father)).be.true;
+              return done();
+            }
+          );
+        });
+      });
+
+    }); // populated docs
 
   }); // authorizedFromJSON
 
