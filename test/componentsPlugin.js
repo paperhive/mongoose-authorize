@@ -1,3 +1,4 @@
+/* jshint expr: true */
 'use strict';
 var mongoose = require('mongoose');
 var should = require('should');
@@ -236,23 +237,59 @@ describe('componentsPlugin', function () {
 
   describe('#authorizedFromJSON', function () {
 
+    function checkAuthorizedFromJSON (doc, userId, json, done) {
+      return doc.authorizedFromJSON(userId, json, function (err) {
+        if (err) return done(err);
+        return doc.save(done);
+      });
+    }
+
     describe('unpopulated document (luke)', function () {
+
       it('should update authorized fields', function (done) {
         getUsers(function (err, docs) {
-          docs.luke.authorizedFromJSON(docs.luke._id, {
-            settings: {rememberMe: false}
-          }, function (err) {
-            if (err) return done(err);
-            docs.luke.save(function (err, luke) {
+          checkAuthorizedFromJSON(
+            docs.luke, docs.luke._id,
+            {name: 'Luke Skywalker', settings: {rememberMe: false}},
+            function (err, luke) {
               if (err) return done(err);
               luke.settings.rememberMe.should.eql(false);
-              done();
-            });
-          });
+              luke.name.should.eql('Luke Skywalker');
+              return done();
+            }
+          );
         });
       });
 
-    }); // all docs
+      it('should deny updating an unauthorized field', function (done) {
+        getUsers(function (err, docs) {
+          checkAuthorizedFromJSON(
+            docs.luke, docs.luke._id, {_id: 'foo'},
+            function (err, luke) {
+              should(err).be.an.Error;
+              return done();
+            }
+          );
+        });
+      });
+
+      it('should deny updating mixed authorized and unauthorized fields',
+        function (done) {
+          getUsers(function (err, docs) {
+            checkAuthorizedFromJSON(
+              docs.luke, docs.luke._id,
+              {name: 'Luke Skywalker', _id: 'foo'},
+              function (err, luke) {
+                should(err).be.an.Error;
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+    }); // unpopulated docs
+
   }); // authorizedFromJSON
 
 });
