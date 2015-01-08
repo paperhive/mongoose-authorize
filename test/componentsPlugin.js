@@ -34,7 +34,11 @@ describe('componentsPlugin', function () {
         lightsaber: {type: String, component: 'info'}
       },
       father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'},
-      siblings: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'}]
+      siblings: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'}],
+      tags: {
+        type: [String],
+        component: 'tags'
+      }
     });
     userSchema.plugin(
       authorize.componentsPlugin,
@@ -48,7 +52,7 @@ describe('componentsPlugin', function () {
             if (doc._id.equals(userId)) return done(
               null,
               ['info', 'settings', 'contactVisible', 'contactHidden',
-              'contactSettings']
+              'contactSettings', 'accountArray', 'tags']
             );
             // everyone has read access to info
             if (action === 'read') return done(null, ['info']);
@@ -235,10 +239,10 @@ describe('componentsPlugin', function () {
 
   }); // #authorizedToJSON
 
-  describe('#authorizedFromJSON', function () {
+  describe('#authorizedSetFromJSON', function () {
 
-    function checkAuthorizedFromJSON (doc, userId, json, done) {
-      return doc.authorizedFromJSON(userId, json, function (err) {
+    function checkAuthorizedSetFromJSON (doc, userId, json, done) {
+      return doc.authorizedSetFromJSON(json, userId, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
@@ -248,13 +252,19 @@ describe('componentsPlugin', function () {
 
       it('should update authorized fields', function (done) {
         getUsers(function (err, docs) {
-          checkAuthorizedFromJSON(
+          checkAuthorizedSetFromJSON(
             docs.luke, docs.luke._id,
-            {name: 'Luke Skywalker', settings: {rememberMe: false}},
+            {
+              name: 'Luke Skywalker',
+              settings: {rememberMe: false},
+              tags: ['foo', 'bar']
+            },
             function (err, luke) {
               if (err) return done(err);
-              luke.settings.rememberMe.should.eql(false);
-              luke.name.should.eql('Luke Skywalker');
+              var json = luke.toJSON();
+              json.settings.rememberMe.should.eql(false);
+              json.name.should.eql('Luke Skywalker');
+              json.tags.should.eql(['foo', 'bar']);
               return done();
             }
           );
@@ -264,7 +274,7 @@ describe('componentsPlugin', function () {
       it('should deny updating if user has no permissions', function (done) {
         getUsers(function (err, docs) {
           var original = docs.luke.toJSON();
-          checkAuthorizedFromJSON(
+          checkAuthorizedSetFromJSON(
             docs.luke, docs.leia._id,
             {name: 'Luke Skywalker', settings: {rememberMe: false}},
             function (err, luke) {
@@ -279,7 +289,7 @@ describe('componentsPlugin', function () {
       it('should deny updating an unauthorized field', function (done) {
         getUsers(function (err, docs) {
           var original = docs.luke.toJSON();
-          checkAuthorizedFromJSON(
+          checkAuthorizedSetFromJSON(
             docs.luke, docs.luke._id, {passwordHash: 'foo'},
             function (err, luke) {
               should(err).be.an.Error;
@@ -294,13 +304,13 @@ describe('componentsPlugin', function () {
         function (done) {
           getUsers(function (err, docs) {
             var original = docs.luke.toJSON();
-            checkAuthorizedFromJSON(
+            checkAuthorizedSetFromJSON(
               docs.luke, docs.luke._id,
               {name: 'Luke Skywalker', _id: 'foo'},
               function (err, luke) {
                 should(err).be.an.Error;
-                // TODO: keep unchanged object
-                // original.should.eql(docs.luke.toJSON());
+                // check that document is unchanged
+                original.should.eql(docs.luke.toJSON());
                 return done();
               }
             );
@@ -314,7 +324,7 @@ describe('componentsPlugin', function () {
 
       it('should update populated and authorized fields', function (done) {
         getUsers(function (err, docs) {
-          checkAuthorizedFromJSON(
+          checkAuthorizedSetFromJSON(
             docs.leia, docs.leia._id,
             {father: docs.luke._id.toString()},
             function (err, leia) {
@@ -328,6 +338,6 @@ describe('componentsPlugin', function () {
 
     }); // populated docs
 
-  }); // authorizedFromJSON
+  }); // authorizedSetFromJSON
 
 });
