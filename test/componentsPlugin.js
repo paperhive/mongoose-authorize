@@ -86,7 +86,8 @@ describe('componentsPlugin', function () {
             settings: {rememberMe: true, lightsaber: 'blue'},
             emails: [
               {address: 'luke@skywalk.er', type: 'family', visible: true}
-            ]
+            ],
+            complexTags: [{name: '+1', color: 'green', secret: 'topsecret'}]
           },
           {
             name: 'Leia', passwordHash: 'caffee',
@@ -142,7 +143,7 @@ describe('componentsPlugin', function () {
         _id: docs.luke.emails[0]._id.toString()}],
       father: docs.darth._id.toString(),
       settings: {lightsaber: 'blue'},
-      siblings: [docs.leia._id.toString()]
+      siblings: [docs.leia._id.toString()],
     };
   }
 
@@ -150,6 +151,8 @@ describe('componentsPlugin', function () {
     var luke = getLukeForEveryone(docs);
     luke.settings.rememberMe = true;
     luke.emails[0].visible = true;
+    luke.complexTags = [{name: '+1', color: 'green', 
+      _id: docs.luke.complexTags[0]._id.toString()}];
     return luke;
   }
 
@@ -418,8 +421,8 @@ describe('componentsPlugin', function () {
               docs.luke._id,
               function (err, luke) {
                 if (err) return done(err);
-                luke.complexTags[0].name.should.eql('todo');
-                luke.complexTags[0].color.should.eql('red');
+                luke.complexTags[1].name.should.eql('todo');
+                luke.complexTags[1].color.should.eql('red');
                 return done();
               }
             );
@@ -465,5 +468,70 @@ describe('componentsPlugin', function () {
 
     }); // unpopulated
   }); // authorizedArrayPush
+
+  describe('#authorizedArrayRemove', function () {
+
+    function checkauthorizedArrayRemove (doc, id, array, userId, done) {
+      return doc.authorizedArrayRemove(id, array, userId, function (err) {
+        if (err) return done(err);
+        return doc.save(done);
+      });
+    }
+
+    describe('unpopulated document (luke)', function () {
+
+      it('should remove subdocuments from an authorized array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArrayRemove(
+              docs.luke, docs.luke.complexTags[0]._id, docs.luke.complexTags,
+              docs.luke._id,
+              function (err, luke) {
+                if (err) return done(err);
+                docs.luke.toJSON().complexTags.should.eql([]);
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+      it('should deny removing subdocuments from an unauthorized array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArrayRemove(
+              docs.luke, docs.luke.emails[0]._id, docs.luke.emails,
+              docs.luke._id,
+              function (err, luke) {
+                should(err).be.an.Error;
+                docs.luke.toJSON().should.eql(original);
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+      it('should deny removing a non-existing subdocument from an array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArrayRemove(
+              docs.luke, 'nonexisting', docs.luke.complexTags,
+              docs.luke._id,
+              function (err, luke) {
+                should(err).be.an.Error;
+                docs.luke.toJSON().should.eql(original);
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+    }); // unpopulated
+  }); // authorizedArrayRemove
 
 });
