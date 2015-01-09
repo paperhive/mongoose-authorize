@@ -38,6 +38,14 @@ describe('componentsPlugin', function () {
       tags: {
         type: [String],
         component: 'tags'
+      },
+      complexTags: {
+        type: [{
+          name: {type: String, component: 'tags'},
+          color: {type: String, component: 'tags'},
+          secret: String
+        }],
+        component: 'tags'
       }
     });
     userSchema.plugin(
@@ -271,6 +279,22 @@ describe('componentsPlugin', function () {
         });
       });
 
+      it('should delete authorized fields via undefined', function (done) {
+        getUsers(function (err, docs) {
+          checkAuthorizedSetFromJSON(
+            docs.luke, docs.luke._id,
+            {name: undefined, settings: {rememberMe: undefined}},
+            function (err, luke) {
+              if (err) return done(err);
+              var json = luke.toJSON();
+              (json.name === undefined).should.be.true;
+              (json.settings.rememberMe === undefined).should.be.true;
+              return done();
+            }
+          );
+        });
+      });
+
       it('should deny updating if user has no permissions', function (done) {
         getUsers(function (err, docs) {
           var original = docs.luke.toJSON();
@@ -318,7 +342,7 @@ describe('componentsPlugin', function () {
         }
       );
 
-      it('should deny updating subdocuments in arrays',
+      it('should deny updating subdocuments in arrays via the parent doc',
         function (done) {
           getUsers(function (err, docs) {
             var original = docs.luke.toJSON();
@@ -354,14 +378,63 @@ describe('componentsPlugin', function () {
         });
       });
 
-      it('should deny updating fields in populated references',
+      it('should deny updating populated references', function (done) {
+        getUsers(function (err, docs) {
+          var original = docs.leia.toJSON();
+          checkAuthorizedSetFromJSON(
+            docs.leia, docs.leia._id,
+            {father: {name: 'Darthy'}},
+            function (err, leia) {
+              should(err).be.an.Error;
+              // check that document is unchanged
+              original.should.eql(docs.leia.toJSON());
+              return done();
+            }
+          );
+        });
+      });
+
+    }); // populated docs
+
+  }); // authorizedSetFromJSON
+
+  describe('#authorizedArrayPushJSON', function () {
+
+    function checkAuthorizedArrayPushJSON (doc, json, array, userId, done) {
+      return doc.authorizedArrayPushJSON(json, array, userId, function (err) {
+        if (err) return done(err);
+        return doc.save(done);
+      });
+    }
+
+    describe('unpopulated document (luke)', function () {
+
+      it('should push authorized subdocuments to an array',
         function (done) {
           getUsers(function (err, docs) {
             var original = docs.luke.toJSON();
-            checkAuthorizedSetFromJSON(
-              docs.leia, docs.leia._id,
-              {father: {name: 'Darthy'}},
-              function (err,leia) {
+            checkAuthorizedArrayPushJSON(
+              docs.luke, {name: 'todo', color: 'red'}, docs.luke.complexTags,
+              docs.luke._id,
+              function (err, luke) {
+                if (err) return done(err);
+                luke.complexTags[0].name.should.eql('todo');
+                luke.complexTags[0].color.should.eql('red');
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+      it('should deny pushing to an unauthorized array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkAuthorizedArrayPushJSON(
+              docs.luke, {name: 'todo', color: 'red', secret: 'boo'},
+              docs.luke.complexTags, docs.luke._id,
+              function (err, luke) {
                 should(err).be.an.Error;
                 // check that document is unchanged
                 original.should.eql(docs.luke.toJSON());
@@ -372,9 +445,25 @@ describe('componentsPlugin', function () {
         }
       );
 
+      it('should deny pushing to an authorized array with unauthorized data',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkAuthorizedArrayPushJSON(
+              docs.luke, {address: 'foo@bar.io', type: 'work', visible: true},
+              docs.luke.emails, docs.luke._id,
+              function (err, luke) {
+                should(err).be.an.Error;
+                // check that document is unchanged
+                original.should.eql(docs.luke.toJSON());
+                return done();
+              }
+            );
+          });
+        }
+      );
 
-    }); // populated docs
-
-  }); // authorizedSetFromJSON
+    }); // unpopulated
+  }); // authorizedArrayPushJSON
 
 });
