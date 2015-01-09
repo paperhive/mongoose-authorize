@@ -318,11 +318,29 @@ describe('componentsPlugin', function () {
         }
       );
 
+      it('should deny updating subdocuments in arrays',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkAuthorizedSetFromJSON(
+              docs.luke, docs.luke._id,
+              {emails: [{address: 'foo@bar.io', type: 'work', visible: true}]},
+              function (err, luke) {
+                should(err).be.an.Error;
+                // check that document is unchanged
+                original.should.eql(docs.luke.toJSON());
+                return done();
+              }
+            );
+          });
+        }
+      );
+
     }); // unpopulated docs
 
     describe('populated document (leia)', function () {
 
-      it('should update populated and authorized fields', function (done) {
+      it('should update populated and authorized references', function (done) {
         getUsers(function (err, docs) {
           checkAuthorizedSetFromJSON(
             docs.leia, docs.leia._id,
@@ -335,6 +353,25 @@ describe('componentsPlugin', function () {
           );
         });
       });
+
+      it('should deny updating fields in populated references',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkAuthorizedSetFromJSON(
+              docs.leia, docs.leia._id,
+              {father: {name: 'Darthy'}},
+              function (err,leia) {
+                should(err).be.an.Error;
+                // check that document is unchanged
+                original.should.eql(docs.luke.toJSON());
+                return done();
+              }
+            );
+          });
+        }
+      );
+
 
     }); // populated docs
 
