@@ -247,10 +247,10 @@ describe('componentsPlugin', function () {
 
   }); // #authorizedToJSON
 
-  describe('#authorizedSetFromJSON', function () {
+  describe('#authorizedSet', function () {
 
-    function checkAuthorizedSetFromJSON (doc, userId, json, done) {
-      return doc.authorizedSetFromJSON(json, userId, function (err) {
+    function checkauthorizedSet (doc, userId, json, done) {
+      return doc.authorizedSet(json, userId, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
@@ -260,7 +260,7 @@ describe('componentsPlugin', function () {
 
       it('should update authorized fields', function (done) {
         getUsers(function (err, docs) {
-          checkAuthorizedSetFromJSON(
+          checkauthorizedSet(
             docs.luke, docs.luke._id,
             {
               name: 'Luke Skywalker',
@@ -281,7 +281,7 @@ describe('componentsPlugin', function () {
 
       it('should delete authorized fields via undefined', function (done) {
         getUsers(function (err, docs) {
-          checkAuthorizedSetFromJSON(
+          checkauthorizedSet(
             docs.luke, docs.luke._id,
             {name: undefined, settings: {rememberMe: undefined}},
             function (err, luke) {
@@ -298,7 +298,7 @@ describe('componentsPlugin', function () {
       it('should deny updating if user has no permissions', function (done) {
         getUsers(function (err, docs) {
           var original = docs.luke.toJSON();
-          checkAuthorizedSetFromJSON(
+          checkauthorizedSet(
             docs.luke, docs.leia._id,
             {name: 'Luke Skywalker', settings: {rememberMe: false}},
             function (err, luke) {
@@ -313,7 +313,7 @@ describe('componentsPlugin', function () {
       it('should deny updating an unauthorized field', function (done) {
         getUsers(function (err, docs) {
           var original = docs.luke.toJSON();
-          checkAuthorizedSetFromJSON(
+          checkauthorizedSet(
             docs.luke, docs.luke._id, {passwordHash: 'foo'},
             function (err, luke) {
               should(err).be.an.Error;
@@ -328,7 +328,7 @@ describe('componentsPlugin', function () {
         function (done) {
           getUsers(function (err, docs) {
             var original = docs.luke.toJSON();
-            checkAuthorizedSetFromJSON(
+            checkauthorizedSet(
               docs.luke, docs.luke._id,
               {name: 'Luke Skywalker', _id: 'foo'},
               function (err, luke) {
@@ -346,7 +346,7 @@ describe('componentsPlugin', function () {
         function (done) {
           getUsers(function (err, docs) {
             var original = docs.luke.toJSON();
-            checkAuthorizedSetFromJSON(
+            checkauthorizedSet(
               docs.luke, docs.luke._id,
               {emails: [{address: 'foo@bar.io', type: 'work', visible: true}]},
               function (err, luke) {
@@ -366,7 +366,7 @@ describe('componentsPlugin', function () {
 
       it('should update populated and authorized references', function (done) {
         getUsers(function (err, docs) {
-          checkAuthorizedSetFromJSON(
+          checkauthorizedSet(
             docs.leia, docs.leia._id,
             {father: docs.luke._id.toString()},
             function (err, leia) {
@@ -381,7 +381,7 @@ describe('componentsPlugin', function () {
       it('should deny updating populated references', function (done) {
         getUsers(function (err, docs) {
           var original = docs.leia.toJSON();
-          checkAuthorizedSetFromJSON(
+          checkauthorizedSet(
             docs.leia, docs.leia._id,
             {father: {name: 'Darthy'}},
             function (err, leia) {
@@ -396,12 +396,12 @@ describe('componentsPlugin', function () {
 
     }); // populated docs
 
-  }); // authorizedSetFromJSON
+  }); // authorizedSet
 
-  describe('#authorizedArrayPushJSON', function () {
+  describe('#authorizedArrayPush', function () {
 
-    function checkAuthorizedArrayPushJSON (doc, json, array, userId, done) {
-      return doc.authorizedArrayPushJSON(json, array, userId, function (err) {
+    function checkauthorizedArrayPush (doc, json, array, userId, done) {
+      return doc.authorizedArrayPush(json, array, userId, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
@@ -413,7 +413,7 @@ describe('componentsPlugin', function () {
         function (done) {
           getUsers(function (err, docs) {
             var original = docs.luke.toJSON();
-            checkAuthorizedArrayPushJSON(
+            checkauthorizedArrayPush(
               docs.luke, {name: 'todo', color: 'red'}, docs.luke.complexTags,
               docs.luke._id,
               function (err, luke) {
@@ -431,7 +431,7 @@ describe('componentsPlugin', function () {
         function (done) {
           getUsers(function (err, docs) {
             var original = docs.luke.toJSON();
-            checkAuthorizedArrayPushJSON(
+            checkauthorizedArrayPush(
               docs.luke, {name: 'todo', color: 'red', secret: 'boo'},
               docs.luke.complexTags, docs.luke._id,
               function (err, luke) {
@@ -449,7 +449,7 @@ describe('componentsPlugin', function () {
         function (done) {
           getUsers(function (err, docs) {
             var original = docs.luke.toJSON();
-            checkAuthorizedArrayPushJSON(
+            checkauthorizedArrayPush(
               docs.luke, {address: 'foo@bar.io', type: 'work', visible: true},
               docs.luke.emails, docs.luke._id,
               function (err, luke) {
@@ -464,6 +464,6 @@ describe('componentsPlugin', function () {
       );
 
     }); // unpopulated
-  }); // authorizedArrayPushJSON
+  }); // authorizedArrayPush
 
 });
