@@ -534,4 +534,57 @@ describe('componentsPlugin', function () {
     }); // unpopulated
   }); // authorizedArrayRemove
 
+  describe('#authorizedArraySet', function () {
+
+    function checkauthorizedArraySet (doc, id, json, array, userId, done) {
+      return doc.authorizedArraySet(id, json, array, userId, function (err) {
+        if (err) return done(err);
+        return doc.save(done);
+      });
+    }
+
+    describe('unpopulated document (luke)', function () {
+
+      it('should set subdocuments from an authorized array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArraySet(
+              docs.luke, docs.luke.complexTags[0]._id,
+              {name: 'like'},
+              docs.luke.complexTags,
+              docs.luke._id,
+              function (err, luke) {
+                if (err) return done(err);
+                docs.luke.toJSON().complexTags[0].name.should.eql('like');
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+      it('should deny setting unauthorized fields in subdocuments',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArraySet(
+              docs.luke, docs.luke.complexTags[0]._id,
+              {secret: 'h4x0r'},
+              docs.luke.complexTags,
+              docs.luke._id,
+              function (err, luke) {
+                should(err).be.an.Error;
+                docs.luke.toJSON().should.eql(original);
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+    }); // unpopulated
+  }); // authorizedArraySet
+
+
 });
