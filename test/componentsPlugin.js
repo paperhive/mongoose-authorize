@@ -246,6 +246,19 @@ describe('componentsPlugin', function () {
           });
         });
       });
+
+      it('should detect cycles of populated references', function (done) {
+        getUsers(function (err, docs) {
+          // leia -> luke -> leia is a cycle
+          docs.leia.populate('siblings.0.siblings', function (err, leia) {
+            docs.leia.authorizedToJSON(docs.leia._id, function (err, json) {
+              // doc should look exactly like the 'unpopulated' doc above
+              json.should.eql(getLeiaForLeia(docs));
+              done();
+            });
+          });
+        });
+      });
     }); // populated doc
 
   }); // #authorizedToJSON
