@@ -1,3 +1,4 @@
+/* jshint expr: true */
 'use strict';
 var mongoose = require('mongoose');
 var should = require('should');
@@ -33,7 +34,19 @@ describe('componentsPlugin', function () {
         lightsaber: {type: String, component: 'info'}
       },
       father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'},
-      siblings: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'}]
+      siblings: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'}],
+      tags: {
+        type: [String],
+        component: 'tags'
+      },
+      complexTags: {
+        type: [{
+          name: {type: String, component: 'tags'},
+          color: {type: String, component: 'tags'},
+          secret: String
+        }],
+        component: 'tags'
+      }
     });
     userSchema.plugin(
       authorize.componentsPlugin,
@@ -47,7 +60,7 @@ describe('componentsPlugin', function () {
             if (doc._id.equals(userId)) return done(
               null,
               ['info', 'settings', 'contactVisible', 'contactHidden',
-              'contactSettings']
+              'contactSettings', 'accountArray', 'tags']
             );
             // everyone has read access to info
             if (action === 'read') return done(null, ['info']);
@@ -73,7 +86,8 @@ describe('componentsPlugin', function () {
             settings: {rememberMe: true, lightsaber: 'blue'},
             emails: [
               {address: 'luke@skywalk.er', type: 'family', visible: true}
-            ]
+            ],
+            complexTags: [{name: '+1', color: 'green', secret: 'topsecret'}]
           },
           {
             name: 'Leia', passwordHash: 'caffee',
@@ -129,7 +143,7 @@ describe('componentsPlugin', function () {
         _id: docs.luke.emails[0]._id.toString()}],
       father: docs.darth._id.toString(),
       settings: {lightsaber: 'blue'},
-      siblings: [docs.leia._id.toString()]
+      siblings: [docs.leia._id.toString()],
     };
   }
 
@@ -137,6 +151,8 @@ describe('componentsPlugin', function () {
     var luke = getLukeForEveryone(docs);
     luke.settings.rememberMe = true;
     luke.emails[0].visible = true;
+    luke.complexTags = [{name: '+1', color: 'green', 
+      _id: docs.luke.complexTags[0]._id.toString()}];
     return luke;
   }
 
@@ -172,7 +188,7 @@ describe('componentsPlugin', function () {
     };
   }
 
-  describe('#authToJSON', function () {
+  describe('#authorizedToJSON', function () {
 
     describe('all documents', function () {
 
@@ -232,6 +248,343 @@ describe('componentsPlugin', function () {
       });
     }); // populated doc
 
-  }); // #authToJSON
+  }); // #authorizedToJSON
+
+  describe('#authorizedSet', function () {
+
+    function checkauthorizedSet (doc, userId, json, done) {
+      return doc.authorizedSet(json, userId, function (err) {
+        if (err) return done(err);
+        return doc.save(done);
+      });
+    }
+
+    describe('unpopulated document (luke)', function () {
+
+      it('should update authorized fields', function (done) {
+        getUsers(function (err, docs) {
+          checkauthorizedSet(
+            docs.luke, docs.luke._id,
+            {
+              name: 'Luke Skywalker',
+              settings: {rememberMe: false},
+              tags: ['foo', 'bar']
+            },
+            function (err, luke) {
+              if (err) return done(err);
+              var json = luke.toJSON();
+              json.settings.rememberMe.should.eql(false);
+              json.name.should.eql('Luke Skywalker');
+              json.tags.should.eql(['foo', 'bar']);
+              return done();
+            }
+          );
+        });
+      });
+
+      it('should delete authorized fields via undefined', function (done) {
+        getUsers(function (err, docs) {
+          checkauthorizedSet(
+            docs.luke, docs.luke._id,
+            {name: undefined, settings: {rememberMe: undefined}},
+            function (err, luke) {
+              if (err) return done(err);
+              var json = luke.toJSON();
+              (json.name === undefined).should.be.true;
+              (json.settings.rememberMe === undefined).should.be.true;
+              return done();
+            }
+          );
+        });
+      });
+
+      it('should deny updating if user has no permissions', function (done) {
+        getUsers(function (err, docs) {
+          var original = docs.luke.toJSON();
+          checkauthorizedSet(
+            docs.luke, docs.leia._id,
+            {name: 'Luke Skywalker', settings: {rememberMe: false}},
+            function (err, luke) {
+              should(err).be.an.Error;
+              original.should.eql(docs.luke.toJSON());
+              return done();
+            }
+          );
+        });
+      });
+
+      it('should deny updating an unauthorized field', function (done) {
+        getUsers(function (err, docs) {
+          var original = docs.luke.toJSON();
+          checkauthorizedSet(
+            docs.luke, docs.luke._id, {passwordHash: 'foo'},
+            function (err, luke) {
+              should(err).be.an.Error;
+              original.should.eql(docs.luke.toJSON());
+              return done();
+            }
+          );
+        });
+      });
+
+      it('should deny updating mixed authorized and unauthorized fields',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedSet(
+              docs.luke, docs.luke._id,
+              {name: 'Luke Skywalker', _id: 'foo'},
+              function (err, luke) {
+                should(err).be.an.Error;
+                // check that document is unchanged
+                original.should.eql(docs.luke.toJSON());
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+      it('should deny updating subdocuments in arrays via the parent doc',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedSet(
+              docs.luke, docs.luke._id,
+              {emails: [{address: 'foo@bar.io', type: 'work', visible: true}]},
+              function (err, luke) {
+                should(err).be.an.Error;
+                // check that document is unchanged
+                original.should.eql(docs.luke.toJSON());
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+    }); // unpopulated docs
+
+    describe('populated document (leia)', function () {
+
+      it('should update populated and authorized references', function (done) {
+        getUsers(function (err, docs) {
+          checkauthorizedSet(
+            docs.leia, docs.leia._id,
+            {father: docs.luke._id.toString()},
+            function (err, leia) {
+              if (err) return done(err);
+              should(docs.luke._id.equals(leia.father)).be.true;
+              return done();
+            }
+          );
+        });
+      });
+
+      it('should deny updating populated references', function (done) {
+        getUsers(function (err, docs) {
+          var original = docs.leia.toJSON();
+          checkauthorizedSet(
+            docs.leia, docs.leia._id,
+            {father: {name: 'Darthy'}},
+            function (err, leia) {
+              should(err).be.an.Error;
+              // check that document is unchanged
+              original.should.eql(docs.leia.toJSON());
+              return done();
+            }
+          );
+        });
+      });
+
+    }); // populated docs
+
+  }); // authorizedSet
+
+  describe('#authorizedArrayPush', function () {
+
+    function checkauthorizedArrayPush (doc, json, array, userId, done) {
+      return doc.authorizedArrayPush(json, array, userId, function (err) {
+        if (err) return done(err);
+        return doc.save(done);
+      });
+    }
+
+    describe('unpopulated document (luke)', function () {
+
+      it('should push authorized subdocuments to an array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArrayPush(
+              docs.luke, {name: 'todo', color: 'red'}, docs.luke.complexTags,
+              docs.luke._id,
+              function (err, luke) {
+                if (err) return done(err);
+                luke.complexTags[1].name.should.eql('todo');
+                luke.complexTags[1].color.should.eql('red');
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+      it('should deny pushing to an unauthorized array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArrayPush(
+              docs.luke, {name: 'todo', color: 'red', secret: 'boo'},
+              docs.luke.complexTags, docs.luke._id,
+              function (err, luke) {
+                should(err).be.an.Error;
+                // check that document is unchanged
+                original.should.eql(docs.luke.toJSON());
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+      it('should deny pushing to an authorized array with unauthorized data',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArrayPush(
+              docs.luke, {address: 'foo@bar.io', type: 'work', visible: true},
+              docs.luke.emails, docs.luke._id,
+              function (err, luke) {
+                should(err).be.an.Error;
+                // check that document is unchanged
+                original.should.eql(docs.luke.toJSON());
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+    }); // unpopulated
+  }); // authorizedArrayPush
+
+  describe('#authorizedArrayRemove', function () {
+
+    function checkauthorizedArrayRemove (doc, id, array, userId, done) {
+      return doc.authorizedArrayRemove(id, array, userId, function (err) {
+        if (err) return done(err);
+        return doc.save(done);
+      });
+    }
+
+    describe('unpopulated document (luke)', function () {
+
+      it('should remove subdocuments from an authorized array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArrayRemove(
+              docs.luke, docs.luke.complexTags[0]._id, docs.luke.complexTags,
+              docs.luke._id,
+              function (err, luke) {
+                if (err) return done(err);
+                docs.luke.toJSON().complexTags.should.eql([]);
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+      it('should deny removing subdocuments from an unauthorized array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArrayRemove(
+              docs.luke, docs.luke.emails[0]._id, docs.luke.emails,
+              docs.luke._id,
+              function (err, luke) {
+                should(err).be.an.Error;
+                docs.luke.toJSON().should.eql(original);
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+      it('should deny removing a non-existing subdocument from an array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArrayRemove(
+              docs.luke, 'nonexisting', docs.luke.complexTags,
+              docs.luke._id,
+              function (err, luke) {
+                should(err).be.an.Error;
+                docs.luke.toJSON().should.eql(original);
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+    }); // unpopulated
+  }); // authorizedArrayRemove
+
+  describe('#authorizedArraySet', function () {
+
+    function checkauthorizedArraySet (doc, id, json, array, userId, done) {
+      return doc.authorizedArraySet(id, json, array, userId, function (err) {
+        if (err) return done(err);
+        return doc.save(done);
+      });
+    }
+
+    describe('unpopulated document (luke)', function () {
+
+      it('should set subdocuments from an authorized array',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArraySet(
+              docs.luke, docs.luke.complexTags[0]._id,
+              {name: 'like'},
+              docs.luke.complexTags,
+              docs.luke._id,
+              function (err, luke) {
+                if (err) return done(err);
+                docs.luke.toJSON().complexTags[0].name.should.eql('like');
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+      it('should deny setting unauthorized fields in subdocuments',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toJSON();
+            checkauthorizedArraySet(
+              docs.luke, docs.luke.complexTags[0]._id,
+              {secret: 'h4x0r'},
+              docs.luke.complexTags,
+              docs.luke._id,
+              function (err, luke) {
+                should(err).be.an.Error;
+                docs.luke.toJSON().should.eql(original);
+                return done();
+              }
+            );
+          });
+        }
+      );
+
+    }); // unpopulated
+  }); // authorizedArraySet
+
 
 });
