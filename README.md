@@ -173,6 +173,20 @@ where the provided `userId` has `'read'` access.
  * `callback(err, json)`: the callback to be called with the serialized JSON
    object.
 
+#### doc.authorizedSet(obj, userId, callback)
+
+Check if the provided object `obj` can be set on the document (i.e., if the
+provided `userId` has `'write'` access to all contained fields) and set the
+data. If the check fails, then the document remains unchanged.
+
+ * `obj`: a plain object. The following values are allowed:
+   * primitives: String, Number, Boolean, null
+   * plain objects: must correspond to a nested object (not referenced and
+     populated documents)
+   * arrays with primitives (arrays of subdocuments are not allowed and have to
+     be processed with TODO)
+ * `userId`: document id of a user
+
 ### teamPlugin
  * organize users in teams
  * teams can be nested arbitrarily (cycles are properly handled)
