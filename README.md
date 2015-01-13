@@ -185,7 +185,7 @@ If the `userId` is not authorized, then the document remains unchanged.
    * plain objects: must correspond to a nested object (not referenced and
      populated documents)
    * arrays with primitives (arrays of subdocuments are not allowed and have to
-     be processed with TODO)
+     be processed with the `authorizedArray...` methods, see below)
  * `callback(err)`
 
 #### doc.authorizedArrayPush(userId, array, obj, callback)
@@ -201,8 +201,8 @@ authorized, then the document remains unchanged.
    * primitives: String, Number, Boolean, null
    * plain objects: must correspond to a nested object (not referenced and
      populated documents)
-   * arrays with primitives (arrays of subdocuments are not allowed and have to
-     be processed with TODO)
+   * arrays with primitives (arrays of subdocuments are not allowed in this
+     method and have to be processed with authorizedArrayPush separately)
  * `callback(err)`
 
 #### doc.authorizedArrayRemove(userId, array, id, callback)
@@ -230,8 +230,8 @@ subdocument to the array `array` on the document if the provided `userId` has
    * primitives: String, Number, Boolean, null
    * plain objects: must correspond to a nested object (not referenced and
      populated documents)
-   * arrays with primitives (arrays of subdocuments are not allowed and have to
-     be processed with TODO)
+   * arrays with primitives (arrays of subdocuments are not allowed in this
+     method and have to be processed with authorizedArraySet separately)
  * `callback(err)`
 
 ### teamPlugin
