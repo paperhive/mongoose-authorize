@@ -173,6 +173,63 @@ where the provided `userId` has `'read'` access.
  * `callback(err, json)`: the callback to be called with the serialized JSON
    object.
 
+#### doc.authorizedSet(obj, userId, callback)
+
+Set the provided object `obj` on the document if the provided `userId` has
+`'write'` access for all fields in `obj` (possibly nested, see below).
+If the `userId` is not authorized, then the document remains unchanged.
+
+ * `obj`: a plain object. The following values are allowed:
+   * primitives: String, Number, Boolean, null
+   * plain objects: must correspond to a nested object (not referenced and
+     populated documents)
+   * arrays with primitives (arrays of subdocuments are not allowed and have to
+     be processed with TODO)
+ * `userId`: document id of a user
+
+#### doc.authorizedArrayPush(obj, array, userId, callback)
+
+Push the provided object `obj` as a subdocument to the array `array` on the
+document if the provided `userId` has `'write'` access for all fields in `obj`
+(possibly nested, see below) *and* for the array itself. If the `userId` is not
+authorized, then the document remains unchanged.
+
+ * `obj`: a plain object. The following values are allowed:
+   * primitives: String, Number, Boolean, null
+   * plain objects: must correspond to a nested object (not referenced and
+     populated documents)
+   * arrays with primitives (arrays of subdocuments are not allowed and have to
+     be processed with TODO)
+ * `array`: an array that is contained in the document
+ * `userId`: document id of a user
+
+#### doc.authorizedArrayRemove(id, array, userId, callback)
+
+Remove the subdocument identified by `id` from the array `array` in the
+document if the provided `userId` has `'write'` access for the array. If the
+`userId` is not authorized, then the document remains unchanged.
+
+ * `id`: a subdocument id in `array`
+ * `array`: an array that is contained in the document
+ * `userId`: document id of a user
+
+#### doc.authorizedArraySet(id, obj, array, userId, callback)
+
+Update the subdocument identified by `id` with the provided object `obj` as a
+subdocument to the array `array` on the document if the provided `userId` has
+`'write'` access for all fields in `obj` (possibly nested, see below). If the
+`userId` is not authorized, then the document remains unchanged.
+
+ * `id`: a subdocument id in `array`
+ * `obj`: a plain object. The following values are allowed:
+   * primitives: String, Number, Boolean, null
+   * plain objects: must correspond to a nested object (not referenced and
+     populated documents)
+   * arrays with primitives (arrays of subdocuments are not allowed and have to
+     be processed with TODO)
+ * `array`: an array that is contained in the document
+ * `userId`: document id of a user
+
 ### teamPlugin
  * organize users in teams
  * teams can be nested arbitrarily (cycles are properly handled)
