@@ -549,8 +549,8 @@ describe('componentsPlugin', function () {
 
   describe('#authorizedArraySet', function () {
 
-    function checkauthorizedArraySet (doc, id, json, array, userId, done) {
-      return doc.authorizedArraySet(id, json, array, userId, function (err) {
+    function checkauthorizedArraySet (doc, id, obj, array, userId, done) {
+      return doc.authorizedArraySet(userId, array, id, obj, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
