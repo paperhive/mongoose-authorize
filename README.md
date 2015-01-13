@@ -187,21 +187,21 @@ If the `userId` is not authorized, then the document remains unchanged.
    * arrays with primitives (arrays of subdocuments are not allowed and have to
      be processed with TODO)
 
-#### doc.authorizedArrayPush(obj, array, userId, callback)
+#### doc.authorizedArrayPush(userId, array, obj, callback)
 
 Push the provided object `obj` as a subdocument to the array `array` on the
 document if the provided `userId` has `'write'` access for all fields in `obj`
 (possibly nested, see below) *and* for the array itself. If the `userId` is not
 authorized, then the document remains unchanged.
 
+ * `userId`: document id of a user
+ * `array`: an array that is contained in the document
  * `obj`: a plain object. The following values are allowed:
    * primitives: String, Number, Boolean, null
    * plain objects: must correspond to a nested object (not referenced and
      populated documents)
    * arrays with primitives (arrays of subdocuments are not allowed and have to
      be processed with TODO)
- * `array`: an array that is contained in the document
- * `userId`: document id of a user
 
 #### doc.authorizedArrayRemove(id, array, userId, callback)
 

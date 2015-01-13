@@ -416,8 +416,8 @@ describe('componentsPlugin', function () {
 
   describe('#authorizedArrayPush', function () {
 
-    function checkauthorizedArrayPush (doc, json, array, userId, done) {
-      return doc.authorizedArrayPush(json, array, userId, function (err) {
+    function checkauthorizedArrayPush (doc, obj, array, userId, done) {
+      return doc.authorizedArrayPush(userId, array, obj, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
