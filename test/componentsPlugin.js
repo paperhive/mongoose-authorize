@@ -188,7 +188,7 @@ describe('componentsPlugin', function () {
     };
   }
 
-  describe('#authorizedToJSON', function () {
+  describe('#authorizedToObject', function () {
 
     describe('all documents', function () {
 
@@ -196,8 +196,8 @@ describe('componentsPlugin', function () {
         getUsers(function (err, docs) {
           async.series(_.map(docs, function (doc) {
             return function (cb) {
-              doc.authorizedToJSON(doc._id, function (err, json) {
-                should.not.exist(json.passwordHash);
+              doc.authorizedToObject(doc._id, function (err, obj) {
+                should.not.exist(obj.passwordHash);
                 cb();
               });
             };
@@ -210,8 +210,8 @@ describe('componentsPlugin', function () {
 
       it('should return authorized fields for everyone', function (done) {
         getUsers(function (err, docs) {
-          docs.luke.authorizedToJSON(null, function (err, json) {
-            json.should.eql(getLukeForEveryone(docs));
+          docs.luke.authorizedToObject(null, function (err, obj) {
+            obj.should.eql(getLukeForEveryone(docs));
             done();
           });
         });
@@ -219,8 +219,8 @@ describe('componentsPlugin', function () {
 
       it('should return authorized fields for luke', function (done) {
         getUsers(function (err, docs) {
-          docs.luke.authorizedToJSON(docs.luke._id, function (err, json) {
-            json.should.eql(getLukeForLuke(docs));
+          docs.luke.authorizedToObject(docs.luke._id, function (err, obj) {
+            obj.should.eql(getLukeForLuke(docs));
             done();
           });
         });
@@ -231,8 +231,8 @@ describe('componentsPlugin', function () {
 
       it('should return authorized fields for everyone', function (done) {
         getUsers(function (err, docs) {
-          docs.leia.authorizedToJSON(null, function (err, json) {
-            json.should.eql(getLeiaForEveryone(docs));
+          docs.leia.authorizedToObject(null, function (err, obj) {
+            obj.should.eql(getLeiaForEveryone(docs));
             done();
           });
         });
@@ -240,8 +240,8 @@ describe('componentsPlugin', function () {
 
       it('should return authorized fields for leia', function (done) {
         getUsers(function (err, docs) {
-          docs.leia.authorizedToJSON(docs.leia._id, function (err, json) {
-            json.should.eql(getLeiaForLeia(docs));
+          docs.leia.authorizedToObject(docs.leia._id, function (err, obj) {
+            obj.should.eql(getLeiaForLeia(docs));
             done();
           });
         });
@@ -251,9 +251,9 @@ describe('componentsPlugin', function () {
         getUsers(function (err, docs) {
           // leia -> luke -> leia is a cycle
           docs.leia.populate('siblings.0.siblings', function (err, leia) {
-            docs.leia.authorizedToJSON(docs.leia._id, function (err, json) {
+            docs.leia.authorizedToObject(docs.leia._id, function (err, obj) {
               // doc should look exactly like the 'unpopulated' doc above
-              json.should.eql(getLeiaForLeia(docs));
+              obj.should.eql(getLeiaForLeia(docs));
               done();
             });
           });
@@ -261,7 +261,7 @@ describe('componentsPlugin', function () {
       });
     }); // populated doc
 
-  }); // #authorizedToJSON
+  }); // #authorizedToObject
 
   describe('#authorizedSet', function () {
 
@@ -285,10 +285,10 @@ describe('componentsPlugin', function () {
             },
             function (err, luke) {
               if (err) return done(err);
-              var json = luke.toJSON();
-              json.settings.rememberMe.should.eql(false);
-              json.name.should.eql('Luke Skywalker');
-              json.tags.should.eql(['foo', 'bar']);
+              var obj = luke.toObject();
+              obj.settings.rememberMe.should.eql(false);
+              obj.name.should.eql('Luke Skywalker');
+              obj.tags.should.eql(['foo', 'bar']);
               return done();
             }
           );
@@ -302,9 +302,9 @@ describe('componentsPlugin', function () {
             {name: undefined, settings: {rememberMe: undefined}},
             function (err, luke) {
               if (err) return done(err);
-              var json = luke.toJSON();
-              (json.name === undefined).should.be.true;
-              (json.settings.rememberMe === undefined).should.be.true;
+              var obj = luke.toObject();
+              (obj.name === undefined).should.be.true;
+              (obj.settings.rememberMe === undefined).should.be.true;
               return done();
             }
           );
@@ -313,13 +313,13 @@ describe('componentsPlugin', function () {
 
       it('should deny updating if user has no permissions', function (done) {
         getUsers(function (err, docs) {
-          var original = docs.luke.toJSON();
+          var original = docs.luke.toObject();
           checkauthorizedSet(
             docs.luke, docs.leia._id,
             {name: 'Luke Skywalker', settings: {rememberMe: false}},
             function (err, luke) {
               should(err).be.an.Error;
-              original.should.eql(docs.luke.toJSON());
+              original.should.eql(docs.luke.toObject());
               return done();
             }
           );
@@ -328,12 +328,12 @@ describe('componentsPlugin', function () {
 
       it('should deny updating an unauthorized field', function (done) {
         getUsers(function (err, docs) {
-          var original = docs.luke.toJSON();
+          var original = docs.luke.toObject();
           checkauthorizedSet(
             docs.luke, docs.luke._id, {passwordHash: 'foo'},
             function (err, luke) {
               should(err).be.an.Error;
-              original.should.eql(docs.luke.toJSON());
+              original.should.eql(docs.luke.toObject());
               return done();
             }
           );
@@ -343,14 +343,14 @@ describe('componentsPlugin', function () {
       it('should deny updating mixed authorized and unauthorized fields',
         function (done) {
           getUsers(function (err, docs) {
-            var original = docs.luke.toJSON();
+            var original = docs.luke.toObject();
             checkauthorizedSet(
               docs.luke, docs.luke._id,
               {name: 'Luke Skywalker', _id: 'foo'},
               function (err, luke) {
                 should(err).be.an.Error;
                 // check that document is unchanged
-                original.should.eql(docs.luke.toJSON());
+                original.should.eql(docs.luke.toObject());
                 return done();
               }
             );
@@ -361,14 +361,14 @@ describe('componentsPlugin', function () {
       it('should deny updating subdocuments in arrays via the parent doc',
         function (done) {
           getUsers(function (err, docs) {
-            var original = docs.luke.toJSON();
+            var original = docs.luke.toObject();
             checkauthorizedSet(
               docs.luke, docs.luke._id,
               {emails: [{address: 'foo@bar.io', type: 'work', visible: true}]},
               function (err, luke) {
                 should(err).be.an.Error;
                 // check that document is unchanged
-                original.should.eql(docs.luke.toJSON());
+                original.should.eql(docs.luke.toObject());
                 return done();
               }
             );
@@ -396,14 +396,14 @@ describe('componentsPlugin', function () {
 
       it('should deny updating populated references', function (done) {
         getUsers(function (err, docs) {
-          var original = docs.leia.toJSON();
+          var original = docs.leia.toObject();
           checkauthorizedSet(
             docs.leia, docs.leia._id,
             {father: {name: 'Darthy'}},
             function (err, leia) {
               should(err).be.an.Error;
               // check that document is unchanged
-              original.should.eql(docs.leia.toJSON());
+              original.should.eql(docs.leia.toObject());
               return done();
             }
           );
@@ -428,7 +428,7 @@ describe('componentsPlugin', function () {
       it('should push authorized subdocuments to an array',
         function (done) {
           getUsers(function (err, docs) {
-            var original = docs.luke.toJSON();
+            var original = docs.luke.toObject();
             checkauthorizedArrayPush(
               docs.luke, {name: 'todo', color: 'red'}, docs.luke.complexTags,
               docs.luke._id,
@@ -446,14 +446,14 @@ describe('componentsPlugin', function () {
       it('should deny pushing to an unauthorized array',
         function (done) {
           getUsers(function (err, docs) {
-            var original = docs.luke.toJSON();
+            var original = docs.luke.toObject();
             checkauthorizedArrayPush(
               docs.luke, {name: 'todo', color: 'red', secret: 'boo'},
               docs.luke.complexTags, docs.luke._id,
               function (err, luke) {
                 should(err).be.an.Error;
                 // check that document is unchanged
-                original.should.eql(docs.luke.toJSON());
+                original.should.eql(docs.luke.toObject());
                 return done();
               }
             );
@@ -464,14 +464,14 @@ describe('componentsPlugin', function () {
       it('should deny pushing to an authorized array with unauthorized data',
         function (done) {
           getUsers(function (err, docs) {
-            var original = docs.luke.toJSON();
+            var original = docs.luke.toObject();
             checkauthorizedArrayPush(
               docs.luke, {address: 'foo@bar.io', type: 'work', visible: true},
               docs.luke.emails, docs.luke._id,
               function (err, luke) {
                 should(err).be.an.Error;
                 // check that document is unchanged
-                original.should.eql(docs.luke.toJSON());
+                original.should.eql(docs.luke.toObject());
                 return done();
               }
             );
@@ -496,13 +496,13 @@ describe('componentsPlugin', function () {
       it('should remove subdocuments from an authorized array',
         function (done) {
           getUsers(function (err, docs) {
-            var original = docs.luke.toJSON();
+            var original = docs.luke.toObject();
             checkauthorizedArrayRemove(
               docs.luke, docs.luke.complexTags[0]._id, docs.luke.complexTags,
               docs.luke._id,
               function (err, luke) {
                 if (err) return done(err);
-                docs.luke.toJSON().complexTags.should.eql([]);
+                docs.luke.toObject().complexTags.should.eql([]);
                 return done();
               }
             );
@@ -513,13 +513,13 @@ describe('componentsPlugin', function () {
       it('should deny removing subdocuments from an unauthorized array',
         function (done) {
           getUsers(function (err, docs) {
-            var original = docs.luke.toJSON();
+            var original = docs.luke.toObject();
             checkauthorizedArrayRemove(
               docs.luke, docs.luke.emails[0]._id, docs.luke.emails,
               docs.luke._id,
               function (err, luke) {
                 should(err).be.an.Error;
-                docs.luke.toJSON().should.eql(original);
+                docs.luke.toObject().should.eql(original);
                 return done();
               }
             );
@@ -530,13 +530,13 @@ describe('componentsPlugin', function () {
       it('should deny removing a non-existing subdocument from an array',
         function (done) {
           getUsers(function (err, docs) {
-            var original = docs.luke.toJSON();
+            var original = docs.luke.toObject();
             checkauthorizedArrayRemove(
               docs.luke, 'nonexisting', docs.luke.complexTags,
               docs.luke._id,
               function (err, luke) {
                 should(err).be.an.Error;
-                docs.luke.toJSON().should.eql(original);
+                docs.luke.toObject().should.eql(original);
                 return done();
               }
             );
@@ -561,7 +561,7 @@ describe('componentsPlugin', function () {
       it('should set subdocuments from an authorized array',
         function (done) {
           getUsers(function (err, docs) {
-            var original = docs.luke.toJSON();
+            var original = docs.luke.toObject();
             checkauthorizedArraySet(
               docs.luke, docs.luke.complexTags[0]._id,
               {name: 'like'},
@@ -569,7 +569,7 @@ describe('componentsPlugin', function () {
               docs.luke._id,
               function (err, luke) {
                 if (err) return done(err);
-                docs.luke.toJSON().complexTags[0].name.should.eql('like');
+                docs.luke.toObject().complexTags[0].name.should.eql('like');
                 return done();
               }
             );
@@ -580,7 +580,7 @@ describe('componentsPlugin', function () {
       it('should deny setting unauthorized fields in subdocuments',
         function (done) {
           getUsers(function (err, docs) {
-            var original = docs.luke.toJSON();
+            var original = docs.luke.toObject();
             checkauthorizedArraySet(
               docs.luke, docs.luke.complexTags[0]._id,
               {secret: 'h4x0r'},
@@ -588,7 +588,7 @@ describe('componentsPlugin', function () {
               docs.luke._id,
               function (err, luke) {
                 should(err).be.an.Error;
-                docs.luke.toJSON().should.eql(original);
+                docs.luke.toObject().should.eql(original);
                 return done();
               }
             );
@@ -598,6 +598,5 @@ describe('componentsPlugin', function () {
 
     }); // unpopulated
   }); // authorizedArraySet
-
 
 });

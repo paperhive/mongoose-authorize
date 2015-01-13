@@ -75,11 +75,11 @@ documents we populate Luke's `father` field:
 luke.populate('father', function (err, luke) { /* ... */ });
 ```
 
-Let's assume that Luke is authenticated and wants to have a JSON-representation
+Let's assume that Luke is authenticated and wants to have a representation
 of himself:
 ```javascript
-luke.authorizedToJSON(luke._id, function (err, json) {
-  console.log(json);
+luke.authorizedToObject(luke._id, function (err, obj) {
+  console.log(obj);
 });
 ```
 Result:
@@ -91,10 +91,10 @@ Result:
 ```
 
 Now let's assume that Darth is authenticated and wants to have a
-JSON-representation of his son:
+representation of his son:
 ```javascript
-luke.authorizedToJSON(darth._id, function (err, json) {
-  console.log(json);
+luke.authorizedToObject(darth._id, function (err, obj) {
+  console.log(obj);
 });
 ```
 Result:
@@ -160,18 +160,18 @@ permission to carry out the specified `action`.
  * `callback(err, components)`: the callback to be called where `components` is
    an array of components.
 
-#### doc.authorizedToJSON(userId, [options], callback)
+#### doc.authorizedToObject(userId, [options], callback)
 
-Creates a JSON-representation of the document tailored for the provided
-`userId`, i.e., an object where only the fields of the components are visible
-where the provided `userId` has `'read'` access.
+Creates an object representation (e.g., for serializing it to JSON via
+`JSON.stringify()`) of the document tailored for the provided `userId`, i.e.,
+an object where only the fields of the components are visible where the
+provided `userId` has `'read'` access.
 
  * `userId`: document id of a user.
  * `options`: options passed to
-   [`toJSON()`](http://mongoosejs.com/docs/api.html#document_Document-toJSON)
+   [`toObject()`](http://mongoosejs.com/docs/api.html#document_Document-toObject)
    which is used internally to serialize the document.
- * `callback(err, json)`: the callback to be called with the serialized JSON
-   object.
+ * `callback(err, obj)`: the callback to be called with the object.
 
 #### doc.authorizedSet(userId, obj, callback)
 
