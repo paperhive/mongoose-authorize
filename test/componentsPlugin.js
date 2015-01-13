@@ -265,8 +265,8 @@ describe('componentsPlugin', function () {
 
   describe('#authorizedSet', function () {
 
-    function checkauthorizedSet (doc, userId, json, done) {
-      return doc.authorizedSet(json, userId, function (err) {
+    function checkauthorizedSet (doc, userId, obj, done) {
+      return doc.authorizedSet(userId, obj, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
@@ -416,8 +416,8 @@ describe('componentsPlugin', function () {
 
   describe('#authorizedArrayPush', function () {
 
-    function checkauthorizedArrayPush (doc, json, array, userId, done) {
-      return doc.authorizedArrayPush(json, array, userId, function (err) {
+    function checkauthorizedArrayPush (doc, obj, array, userId, done) {
+      return doc.authorizedArrayPush(userId, array, obj, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
@@ -485,7 +485,7 @@ describe('componentsPlugin', function () {
   describe('#authorizedArrayRemove', function () {
 
     function checkauthorizedArrayRemove (doc, id, array, userId, done) {
-      return doc.authorizedArrayRemove(id, array, userId, function (err) {
+      return doc.authorizedArrayRemove(userId, array, id, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
@@ -549,8 +549,8 @@ describe('componentsPlugin', function () {
 
   describe('#authorizedArraySet', function () {
 
-    function checkauthorizedArraySet (doc, id, json, array, userId, done) {
-      return doc.authorizedArraySet(id, json, array, userId, function (err) {
+    function checkauthorizedArraySet (doc, id, obj, array, userId, done) {
+      return doc.authorizedArraySet(userId, array, id, obj, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
