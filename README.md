@@ -186,6 +186,7 @@ If the `userId` is not authorized, then the document remains unchanged.
      populated documents)
    * arrays with primitives (arrays of subdocuments are not allowed and have to
      be processed with TODO)
+ * `callback(err)`
 
 #### doc.authorizedArrayPush(userId, array, obj, callback)
 
@@ -202,6 +203,7 @@ authorized, then the document remains unchanged.
      populated documents)
    * arrays with primitives (arrays of subdocuments are not allowed and have to
      be processed with TODO)
+ * `callback(err)`
 
 #### doc.authorizedArrayRemove(userId, array, id, callback)
 
@@ -212,6 +214,7 @@ document if the provided `userId` has `'write'` access for the array. If the
  * `userId`: document id of a user
  * `array`: an array that is contained in the document
  * `id`: a subdocument id in `array`
+ * `callback(err)`
 
 #### doc.authorizedArraySet(userId, array, id, obj, callback)
 
@@ -229,6 +232,7 @@ subdocument to the array `array` on the document if the provided `userId` has
      populated documents)
    * arrays with primitives (arrays of subdocuments are not allowed and have to
      be processed with TODO)
+ * `callback(err)`
 
 ### teamPlugin
  * organize users in teams
