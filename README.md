@@ -203,15 +203,15 @@ authorized, then the document remains unchanged.
    * arrays with primitives (arrays of subdocuments are not allowed and have to
      be processed with TODO)
 
-#### doc.authorizedArrayRemove(id, array, userId, callback)
+#### doc.authorizedArrayRemove(userId, array, id, callback)
 
 Remove the subdocument identified by `id` from the array `array` in the
 document if the provided `userId` has `'write'` access for the array. If the
 `userId` is not authorized, then the document remains unchanged.
 
- * `id`: a subdocument id in `array`
- * `array`: an array that is contained in the document
  * `userId`: document id of a user
+ * `array`: an array that is contained in the document
+ * `id`: a subdocument id in `array`
 
 #### doc.authorizedArraySet(id, obj, array, userId, callback)
 

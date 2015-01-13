@@ -485,7 +485,7 @@ describe('componentsPlugin', function () {
   describe('#authorizedArrayRemove', function () {
 
     function checkauthorizedArrayRemove (doc, id, array, userId, done) {
-      return doc.authorizedArrayRemove(id, array, userId, function (err) {
+      return doc.authorizedArrayRemove(userId, array, id, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
