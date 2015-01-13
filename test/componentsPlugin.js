@@ -265,8 +265,8 @@ describe('componentsPlugin', function () {
 
   describe('#authorizedSet', function () {
 
-    function checkauthorizedSet (doc, userId, json, done) {
-      return doc.authorizedSet(json, userId, function (err) {
+    function checkauthorizedSet (doc, userId, obj, done) {
+      return doc.authorizedSet(userId, obj, function (err) {
         if (err) return done(err);
         return doc.save(done);
       });
