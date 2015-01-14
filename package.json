@@ -4,7 +4,8 @@
   "description": "Authorization (NOT authentication) plugin for mongoose",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "coveralls": "mocha --require blanket -R mocha-lcov-reporter | coveralls"
   },
   "repository": {
     "type": "git",
@@ -27,12 +28,21 @@
   "homepage": "https://github.com/paperhub/mongoose-authorize",
   "devDependencies": {
     "bcrypt": "^0.8.0",
+    "blanket": "^1.1.6",
+    "coveralls": "^2.11.2",
     "mocha": "^2.1.0",
+    "mocha-lcov-reporter": "0.0.1",
     "should": "^4.4.2"
   },
   "dependencies": {
     "async": "^0.9.0",
     "lodash": "^2.4.1",
     "mongoose": "^3.8.21"
+  },
+  "config": {
+    "blanket": {
+      "pattern": "lib",
+      "data-cover-never": "node_modules"
+    }
   }
 }
