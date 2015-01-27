@@ -29,7 +29,7 @@ var clearDB = function (done) {
                 collection.dropIndexes(cb);
               }
             ];
-          })),
+          }), true),
           cb
         );
       });
@@ -45,7 +45,7 @@ var clearDB = function (done) {
     //_.map(models, function (model) {
     //  return model.ensureIndexes.bind(model);
     //})
-  ]),
+  ], true),
   done);
 };
 
