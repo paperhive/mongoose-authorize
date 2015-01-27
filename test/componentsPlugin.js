@@ -5,6 +5,7 @@ var should = require('should');
 var async = require('async');
 var _ = require('lodash');
 var bcrypt = require('bcrypt');
+var crypto = require('crypto');
 
 var utils = require('./utils');
 var authorize = utils.authorize;
@@ -70,6 +71,14 @@ describe('componentsPlugin', function () {
         }
       }
     );
+    // our users love gravatar, so we compute email hashes!
+    userSchema.virtual('emailsMd5', {component: 'info'}).get(function () {
+      return _.map(this.emails, function (email) {
+        var md5 = crypto.createHash('md5');
+        md5.update(email.address.trim().toLowerCase());
+        return md5.digest('hex');
+      });
+    });
     userSchema.plugin(authorize.permissionsPlugin, {userModel: 'User'});
     mongoose.model('User', userSchema);
 
@@ -221,6 +230,18 @@ describe('componentsPlugin', function () {
         getUsers(function (err, docs) {
           docs.luke.authorizedToObject(docs.luke._id, function (err, obj) {
             obj.should.eql(getLukeForLuke(docs));
+            done();
+          });
+        });
+      });
+
+      it('should return authorized getters for luke', function (done) {
+        getUsers(function (err, docs) {
+          docs.luke.authorizedToObject(docs.luke._id, {getters: true}, function (err, obj) {
+            if (err) return done(err);
+            var luke = getLukeForLuke(docs);
+            luke.emailsMd5 = ['180caae72a7848552a5ba45cef614c0c'];
+            obj.should.eql(luke);
             done();
           });
         });
