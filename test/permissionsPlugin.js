@@ -18,8 +18,10 @@ describe('permissionPlugin', function () {
         orga1.getPermissions(function (err, permissions) {
           if (err) return done(err);
           permissions.should.eql([
-            {userIds: [user2._id, user1._id], action: 'read', component: 'orgaInfo'},
-            {userIds: [user1._id], action: 'write', component: 'orgaInfo'}
+            {userIds: [user2._id.toString(), user1._id.toString()],
+              action: 'read', component: 'orgaInfo'},
+            {userIds: [user1._id.toString()], action: 'write',
+              component: 'orgaInfo'}
           ]);
           done();
         });
@@ -29,35 +31,32 @@ describe('permissionPlugin', function () {
 
   describe('#hasPermissions', function () {
     it('should return true/false based on permissions', function (done) {
-      function assertTrue(err, value) {
-        if (err) return done(err);
-        should(value).equal(true);
-      }
-      function assertFalse(err, value) {
-        if (err) return done(err);
-        should(value).equal(false);
-      }
-
       utils.insertDocs(function (err, user1, user2, team1, team2, orga1) {
         if (err) return done(err);
         // see definition of teams + permissions in utils.js
 
-        // check permissions for user1
-        orga1.hasPermissions(user1._id, 'write', 'orgaInfo', assertTrue);
-        orga1.hasPermissions(user1._id, 'read', 'orgaInfo', assertTrue);
-        orga1.hasPermissions(user1._id, 'hack', 'orgaInfo', assertFalse);
-
-        // check permission for user2
-        orga1.hasPermissions(user2._id, 'write', 'orgaInfo', assertFalse);
-        orga1.hasPermissions(user2._id, 'read', 'orgaInfo', assertTrue);
-        orga1.hasPermissions(user2._id, 'hack', 'orgaInfo', assertFalse);
-
-        // check permission for unknown user
-        orga1.hasPermissions('nobody', 'write', 'orgaInfo', assertFalse);
-        orga1.hasPermissions('nobody', 'read', 'orgaInfo', assertFalse);
-        orga1.hasPermissions('nobody', 'hack', 'orgaInfo', assertFalse);
-
-        done();
+        async.series(_.map([
+          // check permissions for user1
+          [user1._id, 'write', 'orgaInfo', true],
+          [user1._id, 'read', 'orgaInfo', true],
+          [user1._id, 'hack', 'orgaInfo', false],
+          // check permission for user2
+          [user2._id, 'write', 'orgaInfo', false],
+          [user2._id, 'read', 'orgaInfo', true],
+          [user2._id, 'hack', 'orgaInfo', false],
+          // check permission for unknown user
+          ['nobody', 'write', 'orgaInfo', false],
+          ['nobody', 'read', 'orgaInfo', false],
+          ['nobody', 'hack', 'orgaInfo', false]
+        ], function (arr) {
+          return function (cb) {
+            return orga1.hasPermissions(arr[0], arr[1], arr[2], function (err, val) {
+              if (err) return cb(err);
+              should(val).equal(arr[3]);
+              cb();
+            });
+          };
+        }), done);
       });
     });
   }); // hasPermission
