@@ -423,6 +423,23 @@ describe('componentsPlugin', function () {
         }
       );
 
+      it('should deny updating subdocuments in arrays via the parent doc',
+        function (done) {
+          getUsers(function (err, docs) {
+            var original = docs.luke.toObject();
+            checkauthorizedSet(
+              docs.luke, docs.luke._id,
+              {complexTags: [{name: '-1', color: 'red', secret: 'notsecret'}]},
+              function (err, luke) {
+                should(err).be.an.Error;
+                original.should.eql(docs.luke.toObject());
+                return done();
+              }
+            );
+          });
+        }
+      );
+
     }); // unpopulated docs
 
     describe('populated document (leia)', function () {
