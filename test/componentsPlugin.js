@@ -293,6 +293,13 @@ describe('componentsPlugin', function () {
       });
     }
 
+    function checkauthorizedSetOverwrite (doc, userId, obj, done) {
+      return doc.authorizedSet(userId, obj, {overwrite: true}, function (err) {
+        if (err) return done(err);
+        return doc.save(done);
+      });
+    }
+
     describe('unpopulated document (luke)', function () {
 
       it('should update authorized fields', function (done) {
@@ -326,6 +333,25 @@ describe('componentsPlugin', function () {
               var obj = luke.toObject();
               (obj.name === undefined).should.be.true;
               (obj.settings.rememberMe === undefined).should.be.true;
+              return done();
+            }
+          );
+        });
+      });
+
+      it('should overwrite doc (authorized fields)', function (done) {
+        getUsers(function (err, docs) {
+          var original = docs.luke.toObject();
+          checkauthorizedSetOverwrite(
+            docs.luke, docs.luke._id,
+            {name: 'Lucky Luke'},
+            function (err, luke) {
+              if (err) return done(err);
+              original.name = 'Lucky Luke';
+              delete original.father;
+              delete original.tags;
+              delete original.settings;
+              original.should.eql(luke.toObject());
               return done();
             }
           );
