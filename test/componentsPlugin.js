@@ -32,7 +32,7 @@ describe('componentsPlugin', function () {
       emails: [emailSchema],
       settings: {
         rememberMe: {type: Boolean, component: 'settings'},
-        lightsaber: {type: String, component: 'info'}
+        lightsaber: {type: String}
       },
       father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'},
       siblings: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'}],
@@ -52,6 +52,9 @@ describe('componentsPlugin', function () {
     userSchema.plugin(
       authorize.componentsPlugin,
       {
+        pathComponents: {
+          'settings.lightsaber': 'info'
+        },
         permissions: {
           defaults: {
             read: ['info', 'contactVisible']
