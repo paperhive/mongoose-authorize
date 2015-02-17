@@ -29,6 +29,7 @@ describe('componentsPlugin', function () {
     var userSchema = new mongoose.Schema({
       name: {type: String, component: 'info'},
       passwordHash: {type: String},
+      birthday: {type: Date, component: 'info'},
       emails: [emailSchema],
       settings: {
         rememberMe: {type: Boolean, component: 'settings'},
@@ -111,6 +112,7 @@ describe('componentsPlugin', function () {
           },
           {
             name: 'Darth', passwordHash: 'd4c18b',
+            birthday: '2022-02-01T16:26:15.642Z',
             settings: {rememberMe: false, lightsaber: 'red'}
           },
           cb
@@ -196,6 +198,7 @@ describe('componentsPlugin', function () {
     return {
       _id: docs.darth._id.toString(),
       name: 'Darth',
+      birthday: '2022-02-01T16:26:15.642Z',
       settings: {lightsaber: 'red'}
     };
   }
