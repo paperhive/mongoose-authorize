@@ -36,7 +36,10 @@ describe('componentsPlugin', function () {
         lightsaber: {type: String}
       },
       father: {type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'},
-      siblings: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'}],
+      siblings: {
+        type: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', component: 'info'}],
+        component: 'info'
+      },
       tags: {
         type: [String],
         component: 'tags'
@@ -54,6 +57,7 @@ describe('componentsPlugin', function () {
       authorize.componentsPlugin,
       {
         pathComponents: {
+          'emails': 'info',
           'settings.lightsaber': 'info'
         },
         permissions: {
@@ -165,7 +169,8 @@ describe('componentsPlugin', function () {
     var luke = getLukeForEveryone(docs);
     luke.settings.rememberMe = true;
     luke.emails[0].visible = true;
-    luke.complexTags = [{name: '+1', color: 'green', 
+    luke.tags = [];
+    luke.complexTags = [{name: '+1', color: 'green',
       _id: docs.luke.complexTags[0]._id.toString()}];
     return luke;
   }
@@ -191,6 +196,8 @@ describe('componentsPlugin', function () {
       {address: 'leia@rebels.io', type: 'work',
         _id: docs.leia.emails[1]._id.toString(), visible: true}
     ];
+    leia.tags = [];
+    leia.complexTags = [];
     return leia;
   }
 
@@ -199,7 +206,9 @@ describe('componentsPlugin', function () {
       _id: docs.darth._id.toString(),
       name: 'Darth',
       birthday: '2022-02-01T16:26:15.642Z',
-      settings: {lightsaber: 'red'}
+      settings: {lightsaber: 'red'},
+      emails: [],
+      siblings: []
     };
   }
 
@@ -348,15 +357,18 @@ describe('componentsPlugin', function () {
       it('should overwrite doc (authorized fields)', function (done) {
         getUsers(function (err, docs) {
           var original = docs.luke.toObject();
+          console.log(original);
           checkauthorizedSetOverwrite(
             docs.luke, docs.luke._id,
             {name: 'Lucky Luke'},
             function (err, luke) {
+              console.log(luke.toObject());
               if (err) return done(err);
               original.name = 'Lucky Luke';
               delete original.father;
               delete original.tags;
               delete original.settings;
+              delete original.siblings;
               original.should.eql(luke.toObject());
               return done();
             }
