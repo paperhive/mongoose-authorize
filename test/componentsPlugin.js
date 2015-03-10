@@ -357,12 +357,10 @@ describe('componentsPlugin', function () {
       it('should overwrite doc (authorized fields)', function (done) {
         getUsers(function (err, docs) {
           var original = docs.luke.toObject();
-          console.log(original);
           checkauthorizedSetOverwrite(
             docs.luke, docs.luke._id,
             {name: 'Lucky Luke'},
             function (err, luke) {
-              console.log(luke.toObject());
               if (err) return done(err);
               original.name = 'Lucky Luke';
               delete original.father;
