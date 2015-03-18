@@ -1,6 +1,6 @@
 {
   "name": "mongoose-authorize",
-  "version": "1.0.0-alpha-11",
+  "version": "1.0.0-beta.1",
   "description": "Authorization (NOT authentication) plugin for mongoose",
   "main": "index.js",
   "scripts": {
@@ -32,12 +32,12 @@
     "coveralls": "^2.11.2",
     "mocha": "^2.2.1",
     "mocha-lcov-reporter": "0.0.2",
-    "should": "^5.1.0"
+    "should": "^5.2.0"
   },
   "dependencies": {
     "async": "^0.9.0",
     "lodash": "^3.5.0",
-    "mongoose": "^3.8.24"
+    "mongoose": "^3.8.25"
   },
   "config": {
     "blanket": {
