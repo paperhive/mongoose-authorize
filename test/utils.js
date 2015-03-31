@@ -17,18 +17,12 @@ var clearDB = function (done) {
       mongoose.connection.db.collections(function (err, collections) {
         if (err) return cb(err);
         async.parallel(
-          _.flatten(_.map(collections, function (collection) {
-            if (collection.collectionName.match(/^system\./)) return [];
-            return [
-              // remove all documents in collection
-              function (cb) {
-                collection.remove({}, {safe: true}, cb);
-              },
-              // drop indexes in collection
-              function (cb) {
-                collection.dropIndexes(cb);
-              }
-            ];
+          _.compact(_.map(collections, function (collection) {
+            if (collection.collectionName.match(/^system\./)) return;
+            // drop collection
+            return function (cb) {
+              collection.drop(cb);
+            };
           }), true),
           cb
         );
