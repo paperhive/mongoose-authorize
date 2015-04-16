@@ -41,7 +41,7 @@
   },
   "config": {
     "blanket": {
-      "pattern": "lib",
+      "data-cover-only": "lib",
       "data-cover-never": "node_modules"
     }
   }
