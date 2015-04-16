@@ -1,5 +1,5 @@
 # mongoose-authorize
-[![Build Status](https://travis-ci.org/paperhub/mongoose-authorize.svg)](https://travis-ci.org/paperhub/mongoose-authorize) [![Coverage Status](https://coveralls.io/repos/paperhub/mongoose-authorize/badge.svg?branch=master)](https://coveralls.io/r/paperhub/mongoose-authorize?branch=master) [![Dependency Status](https://gemnasium.com/paperhub/mongoose-authorize.svg)](https://gemnasium.com/paperhub/mongoose-authorize)
+[![Build Status](https://travis-ci.org/paperhive/mongoose-authorize.svg)](https://travis-ci.org/paperhive/mongoose-authorize) [![Coverage Status](https://coveralls.io/repos/paperhive/mongoose-authorize/badge.svg?branch=master)](https://coveralls.io/r/paperhive/mongoose-authorize?branch=master) [![Dependency Status](https://gemnasium.com/paperhive/mongoose-authorize.svg)](https://gemnasium.com/paperhive/mongoose-authorize)
 
 An **authorization** (*not* authentication) plugin for mongoose.
 
