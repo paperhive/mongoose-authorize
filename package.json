@@ -27,8 +27,8 @@
   },
   "homepage": "https://github.com/paperhub/mongoose-authorize",
   "devDependencies": {
-    "bcrypt": "^0.8.2",
-    "blanket": "alex-seville/blanket.git#790c863c47fe50ef4dd1a411e2e6bf36c8cc6263",
+    "bcrypt": "^0.8.3",
+    "blanket": "1.1.7",
     "coveralls": "^2.11.2",
     "mocha": "^2.2.4",
     "mocha-lcov-reporter": "0.0.2",
