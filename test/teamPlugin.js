@@ -1,5 +1,6 @@
 'use strict';
 var mongoose = require('mongoose');
+var erase = require('mongoose-erase');
 var should = require('should');
 var async = require('async');
 var _ = require('lodash');
@@ -7,7 +8,7 @@ var _ = require('lodash');
 var utils = require('./utils');
 
 describe('teamPlugin', function () {
-  beforeEach(utils.clearDB);
+  beforeEach(erase.connectAndErase(mongoose, utils.dbURI));
   beforeEach(utils.defineModels);
 
   describe('#getUserIds', function () {

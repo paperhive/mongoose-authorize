@@ -1,6 +1,7 @@
 /* jshint expr: true */
 'use strict';
 var mongoose = require('mongoose');
+var erase = require('mongoose-erase');
 var should = require('should');
 var async = require('async');
 var _ = require('lodash');
@@ -13,7 +14,7 @@ var authorize = utils.authorize;
 describe('componentsPlugin', function () {
 
   // clear database before each run
-  beforeEach(utils.clearDB);
+  beforeEach(erase.connectAndErase(mongoose, utils.dbURI));
 
   // define models
   beforeEach(function (done) {

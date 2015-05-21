@@ -32,6 +32,7 @@
     "coveralls": "^2.11.2",
     "mocha": "^2.2.5",
     "mocha-lcov-reporter": "0.0.2",
+    "mongoose-erase": "^2.0.0",
     "should": "^6.0.1"
   },
   "dependencies": {

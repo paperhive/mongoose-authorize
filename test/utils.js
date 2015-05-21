@@ -5,44 +5,6 @@ var _ = require('lodash');
 
 var authorize = require('../')();
 
-var clearDB = function (done) {
-  async.series(_.flatten([
-    // ensure a database connection is established
-    function (cb) {
-      if (mongoose.connection.db) return cb();
-      mongoose.connect(dbURI, cb);
-    },
-    // drop collections
-    function (cb) {
-      mongoose.connection.db.collections(function (err, collections) {
-        if (err) return cb(err);
-        async.parallel(
-          _.compact(_.map(collections, function (collection) {
-            if (collection.collectionName.match(/^system\./)) return;
-            // drop collection
-            return function (cb) {
-              collection.drop(cb);
-            };
-          }), true),
-          cb
-        );
-      });
-    },
-    function (cb) {
-      // reset mongoose models
-      mongoose.connection.models = {};
-      mongoose.models = {};
-      mongoose.modelSchemas = {};
-      cb();
-    },
-    //// ensureIndexes
-    //_.map(models, function (model) {
-    //  return model.ensureIndexes.bind(model);
-    //})
-  ], true),
-  done);
-};
-
 var defineModels = function (done) {
   // define User
   var userSchema = new mongoose.Schema({name: String});
@@ -120,7 +82,7 @@ var insertDocs = function (done) {
 
 module.exports = {
   authorize: authorize,
-  clearDB: clearDB,
   defineModels: defineModels,
-  insertDocs: insertDocs
+  insertDocs: insertDocs,
+  dbURI: dbURI
 };
