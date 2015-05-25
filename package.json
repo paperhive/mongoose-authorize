@@ -33,11 +33,11 @@
     "mocha": "^2.2.5",
     "mocha-lcov-reporter": "0.0.2",
     "mongoose-erase": "^2.0.0",
-    "should": "^6.0.1"
+    "should": "^6.0.3"
   },
   "dependencies": {
     "async": "^1.0.0",
-    "lodash": "^3.8.0",
+    "lodash": "^3.9.2",
     "mongoose": "^4.0.3"
   },
   "config": {
