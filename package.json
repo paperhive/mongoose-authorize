@@ -1,6 +1,6 @@
 {
   "name": "mongoose-authorize",
-  "version": "1.0.0-beta.14",
+  "version": "1.0.0-beta.15",
   "description": "Authorization (NOT authentication) plugin for mongoose",
   "main": "index.js",
   "scripts": {
@@ -27,18 +27,18 @@
   },
   "homepage": "https://github.com/paperhive/mongoose-authorize",
   "devDependencies": {
-    "bcrypt": "^0.8.4",
+    "bcrypt": "^0.8.5",
     "blanket": "1.1.7",
-    "coveralls": "^2.11.3",
+    "coveralls": "^2.11.4",
     "mocha": "^2.2.5",
     "mocha-lcov-reporter": "0.0.2",
-    "mongoose-erase": "^2.0.6",
-    "should": "^7.0.2"
+    "mongoose-erase": "^2.0.7",
+    "should": "^7.0.4"
   },
   "dependencies": {
-    "async": "^1.4.0",
-    "lodash": "^3.10.0",
-    "mongoose": "^4.1.0"
+    "async": "^1.4.2",
+    "lodash": "^3.10.1",
+    "mongoose": "^4.1.2"
   },
   "config": {
     "blanket": {
