@@ -5,7 +5,6 @@ var erase = require('mongoose-erase');
 var should = require('should');
 var async = require('async');
 var _ = require('lodash');
-var bcrypt = require('bcrypt');
 var crypto = require('crypto');
 
 var utils = require('./utils');
