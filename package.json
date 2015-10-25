@@ -27,10 +27,10 @@
   },
   "homepage": "https://github.com/paperhive/mongoose-authorize",
   "devDependencies": {
-    "blanket": "1.1.7",
+    "blanket": "^1.1.9",
     "coveralls": "^2.11.4",
     "mocha": "^2.2.5",
-    "mocha-lcov-reporter": "1.0.0",
+    "mocha-lcov-reporter": "^1.0.0",
     "mongoose-erase": "^2.0.7",
     "should": "^7.0.4"
   },
