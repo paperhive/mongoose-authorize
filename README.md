@@ -1,3 +1,7 @@
+# DEPRECATED!
+
+This module is no longer maintained (March 2016). We recommend the lightweight module [walter-whitelist](https://github.com/paperhive/walter-whitelist) for authorizing read/write access to object properties.
+
 # mongoose-authorize
 [![Build Status](https://travis-ci.org/paperhive/mongoose-authorize.svg)](https://travis-ci.org/paperhive/mongoose-authorize) [![Coverage Status](https://coveralls.io/repos/paperhive/mongoose-authorize/badge.svg?branch=master)](https://coveralls.io/r/paperhive/mongoose-authorize?branch=master) [![Dependency Status](https://gemnasium.com/paperhive/mongoose-authorize.svg)](https://gemnasium.com/paperhive/mongoose-authorize)
 
